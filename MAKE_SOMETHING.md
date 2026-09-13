@@ -22,6 +22,12 @@ Open `src/content/library.ts`. Each book has a title, a short description, and a
 
 > Add a three-page story about a cat who learns to bake. Keep the sentences short and give it a happy ending.
 
+## Make a school lesson
+
+Open `src/content/school.ts`. Each lesson has short questions, answer choices, a correct answer, and a helpful hint. Walk inside The Nasal School and tap a subject desk to try it. You can try answers again and explore at your own pace.
+
+> Add a little lesson about shapes with three questions and friendly hints.
+
 ## Write something kind
 
 Think of a welcoming sentence for the café or a funny description for a drink. Short sentences are great, especially for our younger readers.

@@ -1,3 +1,4 @@
+import { school, schoolStations } from "../content/school";
 import { library } from "../content/library";
 import Phaser from "phaser";
 import { restaurant, stops, town } from "../content/town";
@@ -46,6 +47,18 @@ export class TownScene extends Phaser.Scene {
       if (this.room === "town") {
         const hit = stops.find(
           (s) => Math.abs(s.x - p.x) < 145 && p.y > s.y - 245 && p.y < s.y + 30,
+        );
+        if (hit) {
+          this.goTo(hit.id);
+          return;
+        }
+      }
+      if (this.room === "school") {
+        const hit = schoolStations.find(
+          (station) =>
+            Math.abs(station.x - p.x) < 100 &&
+            p.y > station.y - 110 &&
+            p.y < station.y + 25,
         );
         if (hit) {
           this.goTo(hit.id);
@@ -104,6 +117,7 @@ export class TownScene extends Phaser.Scene {
       this.lastNearby = null;
       this.callbacks.nearby(null);
       if (this.room === "town") this.drawTown();
+      else if (this.room === "school") this.drawSchool();
       else
         this.drawHome(
           snapshot.homes.find((h) => `home:${h.id}` === this.room)?.name ??
@@ -179,8 +193,10 @@ export class TownScene extends Phaser.Scene {
     }
   }
   goTo(id: string) {
-    if (this.room !== "town") return;
-    const stop = stops.find((s) => s.id === id);
+    if (this.room !== "town" && this.room !== "school") return;
+    const stop = (this.room === "school" ? schoolStations : stops).find(
+      (s) => s.id === id,
+    );
     if (!stop) return;
     this.arrival = id;
     this.path = this.findPath(stop.x, stop.y);
@@ -240,7 +256,9 @@ export class TownScene extends Phaser.Scene {
     if (!this.path.length && this.arrival && !this.pausedInput) {
       const id = this.arrival;
       this.arrival = undefined;
-      const stop = stops.find((s) => s.id === id)!;
+      const stop = (this.room === "school" ? schoolStations : stops).find(
+        (s) => s.id === id,
+      )!;
       if (
         Phaser.Math.Distance.Between(
           this.avatar.x,
@@ -265,7 +283,17 @@ export class TownScene extends Phaser.Scene {
         stops.find(
           (s) => Math.hypot(s.x - this.avatar.x, s.y - this.avatar.y) < 125,
         )?.id ?? null;
-    else if (this.avatar.y > 745) nearby = "exit";
+    else if (this.room === "school") {
+      if (this.avatar.y > 785 && Math.abs(this.avatar.x - 720) < 90)
+        nearby = "exit";
+      else
+        nearby =
+          schoolStations.find(
+            (station) =>
+              Math.hypot(station.x - this.avatar.x, station.y - this.avatar.y) <
+              95,
+          )?.id ?? null;
+    } else if (this.avatar.y > 745) nearby = "exit";
     if (nearby !== this.lastNearby) {
       this.lastNearby = nearby;
       this.callbacks.nearby(nearby);
@@ -504,7 +532,7 @@ export class TownScene extends Phaser.Scene {
     }
     this.rect(0, 484, 1440, 123, 0xe8d9b6, 20);
     this.rect(652, 110, 137, 930, 0xe8d9b6, 24);
-    this.rect(125, 790, 987, 86, 0xe8d9b6, 24);
+    this.rect(125, 790, 1185, 86, 0xe8d9b6, 24);
     this.rect(125, 744, 70, 80, 0xe8d9b6);
     this.rect(298, 418, 70, 150, 0xe8d9b6);
     this.rect(1075, 425, 70, 120, 0xe8d9b6);
@@ -592,6 +620,25 @@ export class TownScene extends Phaser.Scene {
         );
       }
     }
+    this.rect(1240, 750, 70, 65, 0xe8d9b6);
+    this.building(
+      1185,
+      610,
+      180,
+      127,
+      0xb77c68,
+      0xf6e8c8,
+      school.name,
+      "school",
+    );
+    // A little clock above the school door.
+    const clock = this.add.graphics();
+    clock.fillStyle(0xfff8e6).fillCircle(1275, 638, 17);
+    clock
+      .lineStyle(2, 0x705e4a)
+      .strokeCircle(1275, 638, 17)
+      .lineBetween(1275, 638, 1275, 627)
+      .lineBetween(1275, 638, 1283, 638);
     // Café terrace.
     const terrace = this.add.graphics();
     terrace.fillStyle(0xd7c9a5).fillRoundedRect(108, 398, 100, 74, 14);
@@ -619,7 +666,7 @@ export class TownScene extends Phaser.Scene {
       [1280, 231, 1.4],
       [550, 269, 1.25],
       [48, 917, 1.0],
-      [1240, 725, 1.35],
+      [1395, 690, 0.8],
       [179, 887, 1.25],
       [575, 935, 1.15],
       [852, 936, 1.2],
@@ -644,6 +691,43 @@ export class TownScene extends Phaser.Scene {
     this.rect(590, 635, 7, 51, 0xaa8c63, 2);
     this.rect(551, 623, 85, 28, 0xfff1cb, 5);
     this.text(593, 637, "HOME ↓", 13, "#7c795c");
+  }
+  private drawSchool() {
+    this.cameras.main.setBackgroundColor("#b7c9a2");
+    this.rect(0, 0, town.width, town.height, 0xb7c9a2);
+    this.rect(295, 185, 860, 710, 0x80916e, 25);
+    this.rect(315, 170, 810, 700, 0xf8ecd4, 18);
+    this.rect(335, 200, 770, 180, 0xd9dfc3, 8);
+    this.rect(335, 380, 770, 465, 0xdfbd96);
+    const floor = this.add.graphics().lineStyle(2, 0xc9a880, 0.6);
+    for (let y = 410; y < 845; y += 38) floor.lineBetween(335, y, 1105, y);
+    this.rect(574, 230, 292, 108, 0xa08063, 8);
+    this.rect(584, 240, 272, 88, 0x527567, 5);
+    this.text(720, 270, "Welcome, explorers!", 21, "#fff9e7");
+    this.text(720, 304, "Every question is a new adventure.", 14, "#fff9e7");
+    for (const x of [393, 966]) {
+      this.rect(x, 241, 80, 86, 0xfff8e6, 6);
+      this.rect(x + 7, 248, 66, 72, 0xb2d7d9, 3);
+      this.rect(x + 37, 248, 5, 72, 0xfff8e6);
+    }
+    for (const station of schoolStations) {
+      this.rect(station.x - 88, station.y - 90, 176, 60, 0xa08063, 8);
+      this.rect(station.x - 88, station.y - 98, 176, 54, station.color, 8);
+      this.rect(station.x - 22, station.y - 88, 44, 26, 0xfff9e7, 3);
+      this.rect(station.x - 1, station.y - 86, 2, 22, 0xcbbda0);
+      this.text(station.x, station.y - 20, station.name, 18, "#485e46");
+      this.obstacles.push({
+        x: station.x - 88,
+        y: station.y - 98,
+        w: 176,
+        h: 68,
+      });
+    }
+    this.rect(640, 485, 160, 240, 0xc5cbaa, 22);
+    this.text(720, 121, school.name, 28, "#486048");
+    this.text(720, 912, "Tap a desk, or walk over and press E.", 20, "#60775a");
+    this.rect(659, 813, 122, 34, 0xf3dfb6, 5);
+    this.text(720, 830, "TOWN ↓", 16, "#8f7857");
   }
   private drawHome(name: string) {
     this.cameras.main.setBackgroundColor("#b7c9a2");

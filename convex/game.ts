@@ -138,7 +138,7 @@ export const enter = mutation({
   args: { worldId: v.id("worlds"), room: v.string() },
   handler: async (ctx, { worldId, room }) => {
     const c = await member(ctx, worldId);
-    if (room !== "town") {
+    if (room !== "town" && room !== "school") {
       const homes = await ctx.db
         .query("characters")
         .withIndex("by_world", (q) => q.eq("worldId", worldId))

@@ -92,6 +92,97 @@ try {
   assert.match(await page.locator(".story-page").innerText(), /silver seed/);
   assert.match(await page.locator(".profile-bottom").innerText(), /47/);
   await page.getByRole("button", { name: "Close dialog" }).click();
+  await page.getByRole("button", { name: /The Nasal School/ }).click();
+  await page
+    .getByRole("heading", { name: /The Nasal School/ })
+    .waitFor({ timeout: 20000 });
+  assert.equal(await page.locator("dialog").count(), 0);
+  await page.getByRole("button", { name: "Math desk", exact: true }).click();
+  await page
+    .getByRole("button", { name: "4", exact: true })
+    .waitFor({ timeout: 10000 });
+  await page.getByRole("button", { name: "4", exact: true }).click();
+  assert.match(
+    await page.locator(".school-feedback").innerText(),
+    /Have another go!/,
+  );
+  assert.equal(
+    await page
+      .getByRole("button", { name: "Next question", exact: true })
+      .count(),
+    0,
+  );
+  for (const [index, answer] of ["5", "8", "4"].entries()) {
+    await page.getByRole("button", { name: answer, exact: true }).click();
+    assert.match(
+      await page.locator(".school-feedback").innerText(),
+      /That's right!/,
+    );
+    await page
+      .getByRole("button", {
+        name: index === 2 ? "Finish lesson" : "Next question",
+        exact: true,
+      })
+      .click();
+  }
+  await page
+    .getByRole("heading", { name: "You finished Number fun!" })
+    .waitFor();
+  await page
+    .getByRole("button", { name: "Choose another lesson", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Try Reading fun", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Hat", exact: true }).click();
+  assert.match(
+    await page.locator(".school-feedback").innerText(),
+    /That's right!/,
+  );
+  await page
+    .getByRole("button", { name: "Back to lessons", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Try Number fun", exact: true })
+    .click();
+  assert.match(await page.locator(".school-question").innerText(), /3 apples/);
+  assert.match(await page.locator(".profile-bottom").innerText(), /47/);
+  await page.getByRole("button", { name: "Close dialog" }).click();
+  await page.getByRole("button", { name: "History desk", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Their old diary", exact: true })
+    .waitFor({ timeout: 10000 });
+  await page
+    .getByRole("button", { name: "Their old diary", exact: true })
+    .click();
+  assert.match(
+    await page.locator(".school-feedback").innerText(),
+    /That's right!/,
+  );
+  await page.getByRole("button", { name: "Close dialog" }).click();
+  await page.getByRole("button", { name: "Reading desk", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Hat", exact: true })
+    .waitFor({ timeout: 10000 });
+  await page.getByRole("button", { name: "Hat", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Next question", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Rainy", exact: true }).click();
+  assert.match(
+    await page.locator(".school-feedback").innerText(),
+    /That's right!/,
+  );
+  await page.getByRole("button", { name: "Close dialog" }).click();
+  await page.screenshot({
+    path: "/tmp/our-world-classroom.png",
+    fullPage: true,
+  });
+  await page.getByRole("button", { name: "Back to town", exact: true }).click();
+  assert.equal(
+    await page.getByRole("navigation", { name: "Classroom desks" }).count(),
+    0,
+  );
   await page.getByRole("button", { name: "My home", exact: true }).click();
   await page.getByRole("heading", { name: "Daisy’s home" }).waitFor();
   await page.screenshot({ path: "/tmp/our-world-home.png", fullPage: true });
@@ -148,6 +239,34 @@ try {
       fullPage: true,
     });
     await page.getByRole("button", { name: "Close dialog" }).click();
+    await page.getByRole("button", { name: /The Nasal School/ }).click();
+    await page
+      .getByRole("heading", { name: /The Nasal School/ })
+      .waitFor({ timeout: 20000 });
+    await page
+      .getByRole("button", { name: "Nature desk", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "A butterfly or moth", exact: true })
+      .waitFor({ timeout: 10000 });
+    await page
+      .getByRole("button", { name: "A butterfly or moth", exact: true })
+      .click();
+    assert.match(
+      await page.locator(".school-feedback").innerText(),
+      /That's right!/,
+    );
+    assert.equal(
+      await page
+        .locator("dialog")
+        .evaluate((dialog) => dialog.scrollWidth > dialog.clientWidth),
+      false,
+    );
+    await page.screenshot({
+      path: `/tmp/our-world-school-${name}.png`,
+      fullPage: true,
+    });
+    await page.getByRole("button", { name: "Close dialog" }).click();
     await page.screenshot({
       path: `/tmp/our-world-${name}.png`,
       fullPage: true,
@@ -155,7 +274,7 @@ try {
   }
   assert.deepEqual(errors, []);
   console.log(
-    "PASS: editable profile, path navigation, delivery, café and restaurant purchases, saved meals, consumption, library navigation and reading, home visits, saved progress, tablet/phone layout, no page errors.",
+    "PASS: editable profile, path navigation, delivery, café and restaurant purchases, saved meals, consumption, library navigation and reading, school entry, classroom walking, hints, lessons and exit, home visits, saved progress, tablet/phone layout, no page errors.",
   );
   await page.goto(base);
   await page

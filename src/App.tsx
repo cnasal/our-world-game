@@ -1,3 +1,5 @@
+import { school, schoolStations } from "./content/school";
+import { School } from "./School";
 import {
   Component,
   useCallback,
@@ -21,6 +23,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Backpack,
+  GraduationCap,
   BookOpen,
   Check,
   ChevronRight,
@@ -336,6 +339,7 @@ type Panel =
   | "cafe"
   | "restaurant"
   | "library"
+  | "school"
   | "post"
   | "neighbors"
   | "help"
@@ -350,6 +354,7 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
     [toast, setToast] = useState(""),
     [busy, setBusy] = useState(false);
   const scene = useRef<TownScene | null>(null);
+  const [schoolLesson, setSchoolLesson] = useState<string | null>(null);
   const lock = useRef(false);
   const [name, setName] = useState(c.name),
     [color, setColor] = useState(c.color);
@@ -395,13 +400,28 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
   const interact = (id: string) => {
     if (id === "home")
       void perform({ type: "room", room: `home:${c.id}` }, "Welcome home!");
-    else if (id === "exit") void perform({ type: "room", room: "town" });
+    else if (id === "school")
+      void perform(
+        { type: "room", room: "school" },
+        "Welcome to school! Walk up to a subject desk.",
+      );
+    else if (id.startsWith("lesson:") && c.room === "school") {
+      const station = schoolStations.find((entry) => entry.id === id);
+      if (station) {
+        setSchoolLesson(station.lessonId);
+        open("school");
+      }
+    } else if (id === "exit") void perform({ type: "room", room: "town" });
     else if (
       ["cafe", "restaurant", "library", "post", "neighbors"].includes(id)
     )
       open(id as Panel);
   };
   const go = async (id: string) => {
+    if (c.room === "school" && id === "school") {
+      notify("Choose a subject desk to walk to.");
+      return;
+    }
     if (c.room !== "town") {
       await perform({ type: "room", room: "town" });
       notify("You’re back in town. Choose a place to walk to.");
@@ -419,6 +439,7 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
     cafe: "Something lovely to sip",
     restaurant: restaurant.name,
     library: library.name,
+    school: school.name,
     post: "A little job. A big help.",
     neighbors: "A neighborhood of friends",
     help: "Make yourself at home",
@@ -427,16 +448,18 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
   const online = bridge.neighbors.filter(
     (n) => n.id !== c.id && Date.now() - n.updatedAt < 45000,
   );
-  const isHome = c.room !== "town";
+  const isHome = c.room.startsWith("home:");
+  const isSchool = c.room === "school";
   return (
     <div className="app-shell">
       <header className="topbar">
         <Brand />
         <nav className="top-nav" aria-label="Main">
           <button
-            className={!isHome ? "nav-active" : ""}
+            className={c.room === "town" ? "nav-active" : ""}
             onClick={() => {
-              if (isHome) void perform({ type: "room", room: "town" });
+              if (c.room !== "town")
+                void perform({ type: "room", room: "town" });
             }}
           >
             <MapPin size={17} /> Our town
@@ -477,13 +500,17 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
               <h1>
                 {isHome
                   ? `${homes.find((h) => `home:${h.id}` === c.room)?.name ?? c.name}’s home`
-                  : worldName}
+                  : isSchool
+                    ? school.name
+                    : worldName}
                 <span className="heading-flower">✳</span>
               </h1>
               <p>
                 {isHome
                   ? "Come in, get cozy, stay a little while."
-                  : "A lovely day for a little adventure."}
+                  : isSchool
+                    ? "Walk to a desk and discover something new."
+                    : "A lovely day for a little adventure."}
               </p>
             </div>
             <div className="weather">
@@ -504,7 +531,11 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
             <div className="map-top">
               <span className="map-location">
                 <MapPin size={14} />
-                {isHome ? "Cozy at home" : "Willowbrook square"}
+                {isHome
+                  ? "Cozy at home"
+                  : isSchool
+                    ? "Inside the school"
+                    : "Willowbrook square"}
               </span>
               <span
                 className={"connection " + (!bridge.connected ? "offline" : "")}
@@ -517,7 +548,7 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
                     : `${online.length + 1} here`}
               </span>
             </div>
-            {isHome && (
+            {c.room !== "town" && (
               <button
                 className="back-town"
                 onClick={() => void perform({ type: "room", room: "town" })}
@@ -545,19 +576,23 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
                   className="interact-button"
                   onClick={() => interact(nearby)}
                 >
-                  {nearby === "exit"
-                    ? "Back to town"
-                    : nearby === "cafe"
-                      ? "Visit café"
-                      : nearby === "restaurant"
-                        ? "Visit restaurant"
-                        : nearby === "library"
-                          ? "Visit library"
-                          : nearby === "post"
-                            ? "Pick up a job"
-                            : nearby === "home"
-                              ? "Go inside"
-                              : "Visit a neighbor"}{" "}
+                  {nearby.startsWith("lesson:")
+                    ? `Try ${schoolStations.find((entry) => entry.id === nearby)?.name ?? "a lesson"}`
+                    : nearby === "exit"
+                      ? "Back to town"
+                      : nearby === "cafe"
+                        ? "Visit café"
+                        : nearby === "restaurant"
+                          ? "Visit restaurant"
+                          : nearby === "library"
+                            ? "Visit library"
+                            : nearby === "school"
+                              ? "Visit school"
+                              : nearby === "post"
+                                ? "Pick up a job"
+                                : nearby === "home"
+                                  ? "Go inside"
+                                  : "Visit a neighbor"}{" "}
                   <span>E</span>
                 </button>
               )}
@@ -570,6 +605,19 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
               </button>
             </div>
           </div>
+          {isSchool && (
+            <nav className="school-desks" aria-label="Classroom desks">
+              {schoolStations.map((station) => (
+                <button
+                  className="secondary"
+                  key={station.id}
+                  onClick={() => scene.current?.goTo(station.id)}
+                >
+                  {station.name}
+                </button>
+              ))}
+            </nav>
+          )}
           <div className="map-caption">
             <span>
               <span className="key-cap">↑</span>
@@ -700,6 +748,13 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
               onClick={() => void go("library")}
             />
             <Place
+              icon={<GraduationCap size={20} />}
+              title={school.name}
+              subtitle="Little lessons, big discoveries"
+              color="sage"
+              onClick={() => void go("school")}
+            />
+            <Place
               icon={<Send size={20} />}
               title="Little Post"
               subtitle="Small jobs, happy neighbors"
@@ -788,6 +843,7 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
           }}
         >
           {panel === "library" && <Library />}
+          {panel === "school" && <School initialLessonId={schoolLesson} />}
           {panel === "profile" && (
             <form
               onSubmit={(e) => {

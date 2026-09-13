@@ -2092,3 +2092,42 @@ input {
   gap: 12px;
   margin-top: 22px;
 }
+
+.school-lesson h3 {
+  margin: 24px 0 16px;
+  font-size: 22px;
+}
+.school-question {
+  border: 0;
+  padding: 0;
+  margin: 20px 0;
+  min-width: 0;
+}
+.school-question legend {
+  font-size: 19px;
+  line-height: 1.6;
+  margin-bottom: 18px;
+}
+.school-answers {
+  display: grid;
+  gap: 10px;
+}
+.school-answers button {
+  white-space: normal;
+  min-height: 44px;
+}
+.school-answers button[aria-pressed="true"] {
+  outline: 2px solid #567854;
+  outline-offset: 2px;
+}
+.school-feedback {
+  line-height: 1.7;
+  margin: 20px 0;
+}
+
+.school-desks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 0;
+}

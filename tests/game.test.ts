@@ -246,6 +246,41 @@ describe("private shared town", () => {
     expect(saved.character.balance).toBe(40);
     expect(saved.character.inventory["sunny-pizza"]).toBe(0);
   });
+  test("members share the school room and outsiders cannot enter it", async () => {
+    const { owner, worldId, t } = await setup();
+    await t.mutation(internal.admin.addMember, {
+      worldId,
+      subject: "user_classmate",
+    });
+    const classmate = t.withIdentity({ subject: "user_classmate" });
+    for (const player of [owner, classmate]) {
+      await player.mutation(api.game.enter, { worldId, room: "school" });
+    }
+    await owner.mutation(api.game.move, { worldId, x: 480, y: 530 });
+    const people = await classmate.query(api.game.people, {
+      worldId,
+      room: "school",
+    });
+    expect(people).toHaveLength(2);
+    expect(people.some((person) => person.x === 480 && person.y === 530)).toBe(
+      true,
+    );
+    await expect(
+      t
+        .withIdentity({ subject: "user_outsider" })
+        .mutation(api.game.enter, { worldId, room: "school" }),
+    ).rejects.toThrow();
+    await expect(
+      owner.mutation(api.game.enter, { worldId, room: "made-up-room" }),
+    ).rejects.toThrow();
+    await owner.mutation(api.game.enter, { worldId, room: "town" });
+    expect(
+      await classmate.query(api.game.people, { worldId, room: "school" }),
+    ).toHaveLength(1);
+    expect(
+      (await owner.query(api.game.snapshot, { worldId })).character.balance,
+    ).toBe(50);
+  });
   test("renaming preserves ownership, home, balance, and inventory", async () => {
     const { owner, worldId } = await setup();
     const before = await owner.query(api.game.snapshot, { worldId });
