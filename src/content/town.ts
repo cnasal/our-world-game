@@ -1,3 +1,4 @@
+import { hotel } from "./hotel";
 import { school } from "./school";
 import { library } from "./library";
 
@@ -110,10 +111,11 @@ export const avatarColors = [
   "#7ba9bf",
   "#bf87ab",
 ];
-export const town = { width: 1440, height: 1040, spawn: { x: 720, y: 665 } };
+export const town = { width: 1800, height: 1040, spawn: { x: 720, y: 665 } };
 export const stops = [
   { id: "cafe", name: "Cloud Café", x: 332, y: 465 },
   { id: "restaurant", name: restaurant.name, x: 705, y: 405 },
+  { id: "hotel", name: hotel.name, x: 1610, y: 485 },
   { id: "post", name: "Little Post", x: 1110, y: 465 },
   { id: "library", name: library.name, x: 160, y: 795 },
   { id: "school", name: school.name, x: 1275, y: 795 },

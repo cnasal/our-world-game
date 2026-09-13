@@ -35,6 +35,7 @@ export type GameAction =
   | { type: "profile"; name: string; color: string }
   | { type: "buy"; itemId: string; requestId: string }
   | { type: "use"; itemId: string; requestId: string }
+  | { type: "eatFree"; itemId: string; requestId: string }
   | { type: "startJob" }
   | { type: "finishJob"; requestId: string }
   | { type: "room"; room: string }

@@ -10,6 +10,7 @@
     "backend": "convex dev",
     "test": "vitest run",
     "test:browser": "node scripts/browser-check.mjs",
+    "test:hotel": "node scripts/hotel-check.mjs",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"convex/*.ts\" \"tests/*.ts\" \"scripts/*.mjs\" \"*.{md,json,ts,html}\""
   },
   "dependencies": {

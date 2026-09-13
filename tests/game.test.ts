@@ -1,3 +1,4 @@
+import { guestRooms, hotel, hotelMeals } from "../src/content/hotel";
 import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
 import schema from "../convex/schema";
@@ -402,6 +403,98 @@ describe("private shared town", () => {
     expect(
       people.filter((person) => person.restId === "chair-math"),
     ).toHaveLength(1);
+  });
+  test("hotel rooms are shared only within the invited world", async () => {
+    const { owner, worldId, t } = await setup();
+    await t.mutation(internal.admin.addMember, {
+      worldId,
+      subject: "user_guest",
+    });
+    const guest = t.withIdentity({ subject: "user_guest" });
+    for (const room of [
+      hotel.lobby,
+      ...guestRooms.map((entry) => entry.id),
+      hotel.dining,
+    ]) {
+      await owner.mutation(api.game.enter, { worldId, room });
+      await guest.mutation(api.game.enter, { worldId, room });
+      expect(
+        await guest.query(api.game.people, { worldId, room }),
+      ).toHaveLength(2);
+    }
+    await expect(
+      owner.mutation(api.game.enter, { worldId, room: "hotel:missing-room" }),
+    ).rejects.toThrow();
+    await expect(
+      t
+        .withIdentity({ subject: "user_outsider" })
+        .mutation(api.game.enter, { worldId, room: hotel.lobby }),
+    ).rejects.toThrow();
+    const otherWorld = await t.mutation(internal.admin.createWorld, {
+      name: "Other hotel",
+      ownerSubject: "user_other",
+    });
+    await t
+      .withIdentity({ subject: "user_other" })
+      .mutation(api.game.enter, { worldId: otherWorld, room: hotel.dining });
+    expect(
+      await owner.query(api.game.people, { worldId, room: hotel.dining }),
+    ).toHaveLength(2);
+  });
+  test("hotel dining is free, dine-in only, and duplicate requests record one meal", async () => {
+    const { owner, worldId, t } = await setup();
+    const before = await owner.query(api.game.snapshot, { worldId });
+    const eat = {
+      worldId,
+      type: "eatFree" as const,
+      itemId: hotelMeals[0].id,
+      requestId: "hotel-meal",
+    };
+    await expect(owner.mutation(api.game.transact, eat)).rejects.toThrow(
+      "dining room",
+    );
+    await owner.mutation(api.game.enter, { worldId, room: guestRooms[0].id });
+    await expect(owner.mutation(api.game.transact, eat)).rejects.toThrow(
+      "dining room",
+    );
+    await owner.mutation(api.game.enter, { worldId, room: hotel.dining });
+    await expect(
+      owner.mutation(api.game.transact, { ...eat, itemId: "berry-milk" }),
+    ).rejects.toThrow("hotel menu");
+    // Eating works while seated and does not require coins.
+    await t.run(async (ctx) => {
+      await ctx.db.patch(before.character.id, { balance: 0 });
+    });
+    await owner.mutation(api.game.move, { worldId, x: 500, y: 715 });
+    await owner.mutation(api.game.rest, {
+      worldId,
+      furnitureId: "hotel-chair-1",
+    });
+    await owner.mutation(api.game.transact, eat);
+    await owner.mutation(api.game.transact, eat);
+    for (const meal of hotelMeals.slice(1))
+      await owner.mutation(api.game.transact, {
+        ...eat,
+        itemId: meal.id,
+        requestId: meal.id,
+      });
+    const after = await owner.query(api.game.snapshot, { worldId });
+    expect(after.character.balance).toBe(0);
+    expect(after.character.inventory).toEqual(before.character.inventory);
+    expect(
+      after.receipts.filter((receipt) =>
+        receipt.label.includes("at the hotel"),
+      ),
+    ).toHaveLength(hotelMeals.length);
+    expect(
+      (await owner.query(api.game.people, { worldId, room: hotel.dining }))[0]
+        .restId,
+    ).toBe("hotel-chair-1");
+    await expect(
+      t
+        .withIdentity({ subject: "user_outsider" })
+        .mutation(api.game.transact, eat),
+    ).rejects.toThrow();
   });
   test("renaming preserves ownership, home, balance, and inventory", async () => {
     const { owner, worldId } = await setup();

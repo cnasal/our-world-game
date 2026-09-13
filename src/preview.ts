@@ -1,3 +1,4 @@
+import { hotel, hotelMeals } from "./content/hotel";
 import { furnitureFor } from "./content/furniture";
 import { useCallback, useRef, useState } from "react";
 import { avatarColors, shopItems, stops, town } from "./content/town";
@@ -112,6 +113,14 @@ export function usePreview(): GameBridge {
           if (Math.hypot(c.x - seat.approach.x, c.y - seat.approach.y) > 95)
             throw new Error(`Walk to the ${seat.name.toLowerCase()} first.`);
           Object.assign(c, { x: seat.x, y: seat.y, restId: seat.id });
+          break;
+        }
+        case "eatFree": {
+          if (c.room !== hotel.dining)
+            throw new Error("Visit the hotel dining room for a free meal.");
+          const meal = hotelMeals.find((item) => item.id === action.itemId);
+          if (!meal) throw new Error("Choose a meal from the hotel menu.");
+          label = `Enjoyed ${meal.name} at the hotel`;
           break;
         }
         case "startJob":

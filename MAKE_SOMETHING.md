@@ -34,6 +34,12 @@ Tap a sofa or chair to sit, or tap a bed to lie down. The buttons below the game
 
 Furniture locations live in `src/content/furniture.ts`. Each spot needs a clear place beside it to stand up.
 
+## Make the hotel welcoming
+
+Visit The Nasal Hotel at the end of the street. Walk through the lobby doors to explore Cloud, Sunflower, and Star rooms, or enjoy a free meal in the dining room. Beds and chairs work here too.
+
+Room names, rug colors, and free meals live in `src/content/hotel.ts`. Hotel meals are eaten in the dining room and never cost coins.
+
 ## Write something kind
 
 Think of a welcoming sentence for the café or a funny description for a drink. Short sentences are great, especially for our younger readers.

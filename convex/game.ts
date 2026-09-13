@@ -1,3 +1,4 @@
+import { hotel, hotelMeals, isHotelRoom } from "../src/content/hotel";
 import { furnitureFor } from "../src/content/furniture";
 import { v } from "convex/values";
 import type { GenericId } from "convex/values";
@@ -152,7 +153,7 @@ export const enter = mutation({
   args: { worldId: v.id("worlds"), room: v.string() },
   handler: async (ctx, { worldId, room }) => {
     const c = await member(ctx, worldId);
-    if (room !== "town" && room !== "school") {
+    if (room !== "town" && room !== "school" && !isHotelRoom(room)) {
       const homes = await ctx.db
         .query("characters")
         .withIndex("by_world", (q) => q.eq("worldId", worldId))
@@ -255,6 +256,7 @@ export const transact = mutation({
   args: {
     worldId: v.id("worlds"),
     type: v.union(
+      v.literal("eatFree"),
       v.literal("buy"),
       v.literal("use"),
       v.literal("startJob"),
@@ -305,6 +307,12 @@ export const transact = mutation({
         balance: c.balance + amount,
         deliveries: c.deliveries + 1,
       });
+    } else if (args.type === "eatFree") {
+      if (p?.room !== hotel.dining)
+        throw new Error("Visit the hotel dining room for a free meal.");
+      const meal = hotelMeals.find((item) => item.id === args.itemId);
+      if (!meal) throw new Error("Choose a meal from the hotel menu.");
+      label = `Enjoyed ${meal.name} at the hotel`;
     } else {
       const item = shopItems.find((d) => d.id === args.itemId);
       if (!item) throw new Error("That item is not available.");

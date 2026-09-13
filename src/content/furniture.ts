@@ -1,3 +1,4 @@
+import { guestRooms, hotel } from "./hotel";
 import { schoolStations } from "./school";
 export type Furniture = {
   id: string;
@@ -69,8 +70,20 @@ const cafeFurniture: Furniture[] = [
     hit: { x: 172, y: 410, w: 28, h: 36 },
   },
 ];
+const hotelSeats: Furniture[] = [500, 940].map((x, i) => ({
+  id: `hotel-chair-${i + 1}`,
+  name: i === 0 ? "Left chair" : "Right chair",
+  pose: "sit",
+  x,
+  y: 650,
+  approach: { x, y: 715 },
+  hit: { x: x - 22, y: 617, w: 44, h: 44 },
+  chair: true,
+}));
 export function furnitureFor(room: string): Furniture[] {
-  if (room.startsWith("home:")) return homeFurniture;
+  if (room.startsWith("home:") || guestRooms.some((entry) => entry.id === room))
+    return homeFurniture;
+  if (room === hotel.lobby || room === hotel.dining) return hotelSeats;
   if (room === "school") return schoolFurniture;
   if (room === "town") return cafeFurniture;
   return [];

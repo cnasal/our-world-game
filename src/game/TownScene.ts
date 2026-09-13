@@ -1,3 +1,10 @@
+import {
+  guestRooms,
+  hotel,
+  hotelRoomName,
+  hotelStops,
+  isHotelRoom,
+} from "../content/hotel";
 import { furnitureFor } from "../content/furniture";
 import { school, schoolStations } from "../content/school";
 import { library } from "../content/library";
@@ -69,6 +76,18 @@ export class TownScene extends Phaser.Scene {
           return;
         }
       }
+      if (isHotelRoom(this.room)) {
+        const hit = hotelStops(this.room).find(
+          (entry) =>
+            Math.abs(entry.x - p.x) < 85 &&
+            p.y > entry.y - 150 &&
+            p.y < entry.y + 25,
+        );
+        if (hit) {
+          this.goTo(hit.id);
+          return;
+        }
+      }
       if (this.room === "school") {
         const hit = schoolStations.find(
           (station) =>
@@ -98,11 +117,11 @@ export class TownScene extends Phaser.Scene {
     const cam = this.cameras.main;
     const zoom = Math.max(
       0.48,
-      Math.min(this.scale.width / town.width, this.scale.height / town.height),
+      Math.min(this.scale.width / 1440, this.scale.height / 1040),
     );
     cam
       .setZoom(zoom)
-      .setBounds(0, 0, town.width, town.height)
+      .setBounds(0, 0, this.room === "town" ? town.width : 1440, town.height)
       .startFollow(this.avatar, true, 0.09, 0.09);
   }
   setPaused(value: boolean) {
@@ -134,7 +153,12 @@ export class TownScene extends Phaser.Scene {
       this.callbacks.nearby(null);
       if (this.room === "town") this.drawTown();
       else if (this.room === "school") this.drawSchool();
-      else
+      else if (this.room === hotel.lobby || this.room === hotel.dining)
+        this.drawHotel();
+      else if (isHotelRoom(this.room)) {
+        const guest = guestRooms.find((entry) => entry.id === this.room)!;
+        this.drawHome(guest.name, guest.color);
+      } else
         this.drawHome(
           snapshot.homes.find((h) => `home:${h.id}` === this.room)?.name ??
             snapshot.character.name,
@@ -220,6 +244,8 @@ export class TownScene extends Phaser.Scene {
     if (id.startsWith("rest:"))
       return furnitureFor(this.room).find((item) => item.id === id.slice(5))
         ?.approach;
+    if (isHotelRoom(this.room))
+      return hotelStops(this.room).find((entry) => entry.id === id);
     return (
       this.room === "school"
         ? schoolStations
@@ -323,6 +349,12 @@ export class TownScene extends Phaser.Scene {
       nearby =
         stops.find(
           (s) => Math.hypot(s.x - this.avatar.x, s.y - this.avatar.y) < 125,
+        )?.id ?? null;
+    else if (isHotelRoom(this.room))
+      nearby =
+        hotelStops(this.room).find(
+          (entry) =>
+            Math.hypot(entry.x - this.avatar.x, entry.y - this.avatar.y) < 80,
         )?.id ?? null;
     else if (this.room === "school") {
       if (this.avatar.y > 785 && Math.abs(this.avatar.x - 720) < 90)
@@ -577,14 +609,14 @@ export class TownScene extends Phaser.Scene {
     this.rect(0, 0, town.width, town.height, 0xb8cf95);
     const random = new Phaser.Math.RandomDataGenerator(["willowbrook"]);
     for (let i = 0; i < 340; i++) {
-      const x = random.between(20, 1420),
+      const x = random.between(20, town.width - 20),
         y = random.between(110, 1010);
       const g = this.add.graphics();
       g.lineStyle(2, 0x9eba82, 0.6)
         .lineBetween(x, y, x - 3, y - 5)
         .lineBetween(x, y, x + 3, y - 4);
     }
-    this.rect(0, 484, 1440, 123, 0xe8d9b6, 20);
+    this.rect(0, 484, town.width, 123, 0xe8d9b6, 20);
     this.rect(652, 110, 137, 930, 0xe8d9b6, 24);
     this.rect(125, 790, 1185, 86, 0xe8d9b6, 24);
     this.rect(125, 744, 70, 80, 0xe8d9b6);
@@ -594,7 +626,7 @@ export class TownScene extends Phaser.Scene {
     this.rect(956, 730, 70, 100, 0xe8d9b6);
     const stones = this.add.graphics();
     stones.fillStyle(0xf4e9cf, 0.75);
-    for (let x = 30; x < 1430; x += 56)
+    for (let x = 30; x < town.width - 10; x += 56)
       stones.fillRoundedRect(x, 524 + (x % 3) * 10, 24, 9, 4);
     this.rect(601, 436, 239, 218, 0xf0e2c1, 70);
     // Garden pond and stepping stones.
@@ -693,6 +725,11 @@ export class TownScene extends Phaser.Scene {
       .strokeCircle(1275, 638, 17)
       .lineBetween(1275, 638, 1275, 627)
       .lineBetween(1275, 638, 1283, 638);
+    this.rect(1575, 425, 70, 110, 0xe8d9b6);
+    this.building(1500, 261, 220, 167, 0x9294b7, 0xffedcf, hotel.name, "hotel");
+    this.text(1610, 324, "HOTEL", 18, "#5c617b");
+    this.tree(1765, 210, 0.9);
+    this.tree(1620, 770, 1.3);
     // Café terrace.
     const terrace = this.add.graphics();
     terrace.fillStyle(0xd7c9a5).fillRoundedRect(108, 398, 100, 74, 14);
@@ -746,6 +783,68 @@ export class TownScene extends Phaser.Scene {
     this.rect(551, 623, 85, 28, 0xfff1cb, 5);
     this.text(593, 637, "HOME ↓", 13, "#7c795c");
   }
+  private drawHotel() {
+    const dining = this.room === hotel.dining;
+    this.cameras.main.setBackgroundColor("#b7c9a2");
+    this.rect(0, 0, town.width, town.height, 0xb7c9a2);
+    this.rect(295, 185, 860, 710, 0x80916e, 25);
+    this.rect(315, 170, 810, 700, 0xf8ecd4, 18);
+    this.rect(335, 200, 770, 180, 0xe3d9e8, 8);
+    this.rect(335, 380, 770, 465, 0xdfbd96);
+    const floor = this.add.graphics().lineStyle(2, 0xc9a880, 0.6);
+    for (let y = 410; y < 845; y += 38) floor.lineBetween(335, y, 1105, y);
+    this.rect(625, 560, 190, 185, 0xc0afcb, 20);
+    if (dining) {
+      this.rect(560, 336, 320, 55, 0xb29069, 8);
+      this.rect(552, 326, 336, 45, 0xf1d6ae, 8);
+      for (const x of [610, 720, 830]) {
+        const plate = this.add.graphics();
+        plate.fillStyle(0xfff8e6).fillEllipse(x, 345, 56, 24);
+        plate.fillStyle(0xd5a060).fillEllipse(x, 343, 32, 15);
+      }
+      this.obstacles.push({ x: 552, y: 326, w: 336, h: 65 });
+      this.text(720, 277, "FREE BUFFET", 28, "#656079");
+      this.text(720, 407, "Help yourself!", 20, "#586b4f");
+      for (const x of [500, 940]) {
+        this.rect(x - 78, 504, 156, 62, 0xb29069, 10);
+        this.rect(x - 82, 495, 164, 60, 0xf5e5c4, 10);
+        this.obstacles.push({ x: x - 82, y: 495, w: 164, h: 71 });
+      }
+    } else {
+      for (const door of hotelStops(this.room).filter(
+        (entry) => entry.id !== "exit",
+      )) {
+        this.rect(door.x - 43, 280, 86, 103, 0xa08063, 7);
+        this.rect(
+          door.x - 35,
+          287,
+          70,
+          96,
+          guestRooms.find((entry) => entry.id === door.target)?.color ??
+            0x9fb899,
+          5,
+        );
+        this.rect(door.x + 22, 335, 6, 6, 0xffe4a0, 3);
+        this.text(door.x, 258, door.name, 18, "#656079");
+      }
+      this.rect(635, 483, 170, 62, 0xb29069, 8);
+      this.rect(628, 472, 184, 32, 0xf1d6ae, 8);
+      this.text(720, 514, "WELCOME", 20, "#fff8e6");
+      this.obstacles.push({ x: 628, y: 472, w: 184, h: 73 });
+    }
+    this.text(720, 121, hotelRoomName(this.room)!, 28, "#486048");
+    this.text(
+      720,
+      912,
+      dining
+        ? "Pull up a chair. Every meal is free."
+        : "Tap a door to explore. Everyone is welcome.",
+      20,
+      "#60775a",
+    );
+    this.rect(659, 813, 122, 34, 0xf3dfb6, 5);
+    this.text(720, 830, dining ? "LOBBY ↓" : "TOWN ↓", 16, "#8f7857");
+  }
   private drawSchool() {
     this.cameras.main.setBackgroundColor("#b7c9a2");
     this.rect(0, 0, town.width, town.height, 0xb7c9a2);
@@ -783,7 +882,7 @@ export class TownScene extends Phaser.Scene {
     this.rect(659, 813, 122, 34, 0xf3dfb6, 5);
     this.text(720, 830, "TOWN ↓", 16, "#8f7857");
   }
-  private drawHome(name: string) {
+  private drawHome(name: string, guestColor?: number) {
     this.cameras.main.setBackgroundColor("#b7c9a2");
     this.rect(0, 0, 1440, 1040, 0xb7c9a2);
     this.rect(295, 185, 860, 710, 0x80916e, 25);
@@ -793,7 +892,7 @@ export class TownScene extends Phaser.Scene {
     const g = this.add.graphics();
     g.lineStyle(2, 0xc9a880, 0.6);
     for (let y = 410; y < 845; y += 38) g.lineBetween(335, y, 1105, y);
-    this.rect(610, 490, 230, 200, 0xd9a795, 30);
+    this.rect(610, 490, 230, 200, guestColor ?? 0xd9a795, 30);
     this.rect(626, 506, 198, 168, 0xe8c1aa, 24);
     this.rect(377, 394, 177, 95, 0x85a89a, 18);
     this.rect(387, 381, 157, 64, 0xa0b9a4, 15);
@@ -813,10 +912,30 @@ export class TownScene extends Phaser.Scene {
     this.rect(851, 247, 74, 54, 0xf2d5a2, 3);
     this.text(888, 274, "✿", 36, "#a18b73");
     this.tree(1035, 322, 0.6);
-    this.text(720, 121, `${name}’s home`, 28, "#486048");
-    this.text(720, 912, "A cozy corner of your own.", 20, "#60775a");
+    this.text(
+      720,
+      121,
+      guestColor === undefined ? `${name}’s home` : name,
+      28,
+      "#486048",
+    );
+    this.text(
+      720,
+      912,
+      guestColor === undefined
+        ? "A cozy corner of your own."
+        : "Make yourself comfortable. The dining room is free!",
+      20,
+      "#60775a",
+    );
     this.rect(659, 813, 122, 34, 0xf3dfb6, 5);
-    this.text(720, 830, "TOWN ↓", 16, "#8f7857");
+    this.text(
+      720,
+      830,
+      guestColor === undefined ? "TOWN ↓" : "LOBBY ↓",
+      16,
+      "#8f7857",
+    );
     this.obstacles.push(
       { x: 370, y: 380, w: 193, h: 110 },
       { x: 911, y: 375, w: 144, h: 210 },
