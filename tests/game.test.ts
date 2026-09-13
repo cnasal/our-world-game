@@ -211,6 +211,41 @@ describe("private shared town", () => {
     expect(s.character.deliveries).toBe(1);
     expect(s.character.inventory["berry-milk"]).toBe(0);
   });
+  test("restaurant meals require arrival, charge once, and can only be eaten once", async () => {
+    const { owner, worldId } = await setup();
+    const buy = {
+      worldId,
+      type: "buy" as const,
+      itemId: "sunny-pizza",
+      requestId: "meal",
+    };
+    await owner.mutation(api.game.move, { worldId, x: 332, y: 465 });
+    await expect(owner.mutation(api.game.transact, buy)).rejects.toThrow(
+      "Walk to The Nasal Restaurant first.",
+    );
+    await owner.mutation(api.game.move, { worldId, x: 705, y: 405 });
+    await expect(
+      owner.mutation(api.game.transact, {
+        ...buy,
+        itemId: "berry-milk",
+        requestId: "wrong-shop",
+      }),
+    ).rejects.toThrow("Walk to Cloud Café first.");
+    await owner.mutation(api.game.transact, buy);
+    await owner.mutation(api.game.transact, buy);
+    let saved = await owner.query(api.game.snapshot, { worldId });
+    expect(saved.character.balance).toBe(40);
+    expect(saved.character.inventory["sunny-pizza"]).toBe(1);
+    const eat = { ...buy, type: "use" as const, requestId: "eat" };
+    await owner.mutation(api.game.transact, eat);
+    await owner.mutation(api.game.transact, eat);
+    await expect(
+      owner.mutation(api.game.transact, { ...eat, requestId: "eat-again" }),
+    ).rejects.toThrow();
+    saved = await owner.query(api.game.snapshot, { worldId });
+    expect(saved.character.balance).toBe(40);
+    expect(saved.character.inventory["sunny-pizza"]).toBe(0);
+  });
   test("renaming preserves ownership, home, balance, and inventory", async () => {
     const { owner, worldId } = await setup();
     const before = await owner.query(api.game.snapshot, { worldId });

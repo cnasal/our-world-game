@@ -39,11 +39,20 @@ import {
   Sprout,
   Sun,
   Users,
+  Utensils,
   Wallet,
   X,
 } from "lucide-react";
 import { api } from "./api";
-import { avatarColors, drinks, stops, town } from "./content/town";
+import {
+  avatarColors,
+  drinks,
+  meals,
+  restaurant,
+  shopItems,
+  stops,
+  town,
+} from "./content/town";
 import { GameCanvas } from "./game/GameCanvas";
 import type { TownScene } from "./game/TownScene";
 import { usePreview } from "./preview";
@@ -319,7 +328,15 @@ function LiveWorld({ worldId }: { worldId: GenericId<"worlds"> }) {
 }
 
 type Panel =
-  "profile" | "bag" | "bank" | "cafe" | "post" | "neighbors" | "help" | null;
+  | "profile"
+  | "bag"
+  | "bank"
+  | "cafe"
+  | "restaurant"
+  | "post"
+  | "neighbors"
+  | "help"
+  | null;
 function GameShell({ bridge }: { bridge: GameBridge }) {
   const {
     snapshot: { character: c, homes, worldName, receipts },
@@ -376,7 +393,8 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
     if (id === "home")
       void perform({ type: "room", room: `home:${c.id}` }, "Welcome home!");
     else if (id === "exit") void perform({ type: "room", room: "town" });
-    else if (["cafe", "post", "neighbors"].includes(id)) open(id as Panel);
+    else if (["cafe", "restaurant", "post", "neighbors"].includes(id))
+      open(id as Panel);
   };
   const go = async (id: string) => {
     if (c.room !== "town") {
@@ -394,6 +412,7 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
     bag: "Your little collection",
     bank: "Your pocket of possibilities",
     cafe: "Something lovely to sip",
+    restaurant: restaurant.name,
     post: "A little job. A big help.",
     neighbors: "A neighborhood of friends",
     help: "Make yourself at home",
@@ -524,11 +543,13 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
                     ? "Back to town"
                     : nearby === "cafe"
                       ? "Visit café"
-                      : nearby === "post"
-                        ? "Pick up a job"
-                        : nearby === "home"
-                          ? "Go inside"
-                          : "Visit a neighbor"}{" "}
+                      : nearby === "restaurant"
+                        ? "Visit restaurant"
+                        : nearby === "post"
+                          ? "Pick up a job"
+                          : nearby === "home"
+                            ? "Go inside"
+                            : "Visit a neighbor"}{" "}
                   <span>E</span>
                 </button>
               )}
@@ -657,6 +678,13 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
               onClick={() => void go("cafe")}
             />
             <Place
+              icon={<Utensils size={20} />}
+              title={restaurant.name}
+              subtitle="Restaurant · Something yummy to eat"
+              color="peach"
+              onClick={() => void go("restaurant")}
+            />
+            <Place
               icon={<Send size={20} />}
               title="Little Post"
               subtitle="Small jobs, happy neighbors"
@@ -734,9 +762,11 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
           eyebrow={
             panel === "cafe"
               ? "WELCOME TO CLOUD CAFÉ"
-              : panel === "post"
-                ? "LITTLE POST"
-                : "OUR WORLD"
+              : panel === "restaurant"
+                ? "WELCOME TO OUR RESTAURANT"
+                : panel === "post"
+                  ? "LITTLE POST"
+                  : "OUR WORLD"
           }
           close={() => {
             if (!busy) setPanel(null);
@@ -790,13 +820,14 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
               </button>
             </form>
           )}
-          {panel === "cafe" && (
+          {(panel === "cafe" || panel === "restaurant") && (
             <>
               <p className="modal-intro">
-                A treat for your travels, or a cozy moment at home. Everything
-                goes into your bag.
+                {panel === "restaurant"
+                  ? restaurant.welcome
+                  : "A treat for your travels, or a cozy moment at home. Everything goes into your bag."}
               </p>
-              {c.delivery === "carrying" && (
+              {panel === "cafe" && c.delivery === "carrying" && (
                 <div className="handoff">
                   <Package size={23} />
                   <div>
@@ -818,7 +849,7 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
                 </div>
               )}
               <div className="shop-list">
-                {drinks.map((item) => (
+                {(panel === "restaurant" ? meals : drinks).map((item) => (
                   <div className="shop-item" key={item.id}>
                     <span
                       className="drink-art"
@@ -903,7 +934,7 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
                 <div className="empty-state">
                   <Backpack size={45} />
                   <h3>A little room for lovely things</h3>
-                  <p>Visit Cloud Café to pick out your first treat.</p>
+                  <p>Visit the café or restaurant to pick out a treat.</p>
                   <button
                     className="secondary"
                     onClick={() => {
@@ -916,7 +947,7 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
                   </button>
                 </div>
               ) : (
-                drinks
+                shopItems
                   .filter((item) => c.inventory[item.id] > 0)
                   .map((item) => (
                     <div className="shop-item" key={item.id}>
@@ -940,7 +971,9 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
                               itemId: item.id,
                               requestId: crypto.randomUUID(),
                             },
-                            "A happy little sip. Delicious!",
+                            item.shop === "restaurant"
+                              ? "Yum! That was a lovely meal."
+                              : "A happy little sip. Delicious!",
                           );
                           scene.current?.wave("❤️");
                         }}

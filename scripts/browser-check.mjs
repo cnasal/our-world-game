@@ -45,6 +45,23 @@ try {
     /A little room for lovely things/,
   );
   await page.getByRole("button", { name: "Close dialog" }).click();
+  await page.getByRole("button", { name: /The Nasal Restaurant/ }).click();
+  await page
+    .getByRole("heading", { name: "The Nasal Restaurant", exact: true })
+    .waitFor({ timeout: 15000 });
+  await page.getByRole("button", { name: "10 Buy", exact: true }).click();
+  assert.match(await page.locator(".profile-bottom").innerText(), /47/);
+  await page.getByRole("button", { name: "Close dialog" }).click();
+  await page.reload();
+  await page.waitForSelector("canvas");
+  await page.getByRole("button", { name: "My bag" }).click();
+  await page.getByRole("heading", { name: "Pizza" }).waitFor();
+  await page.getByRole("button", { name: "Enjoy", exact: true }).click();
+  assert.match(
+    await page.locator("dialog").innerText(),
+    /A little room for lovely things/,
+  );
+  await page.getByRole("button", { name: "Close dialog" }).click();
   await page.getByRole("button", { name: "My home", exact: true }).click();
   await page.getByRole("heading", { name: "Daisy’s home" }).waitFor();
   await page.screenshot({ path: "/tmp/our-world-home.png", fullPage: true });
@@ -52,7 +69,7 @@ try {
   await page.reload();
   await page.waitForSelector("canvas");
   assert.match(await page.locator(".profile-top").innerText(), /Daisy/);
-  assert.match(await page.locator(".profile-bottom").innerText(), /57/);
+  assert.match(await page.locator(".profile-bottom").innerText(), /47/);
   await page.screenshot({ path: "/tmp/our-world-desktop.png", fullPage: true });
   for (const [name, width, height] of [
     ["ipad", 834, 1112],
@@ -84,7 +101,7 @@ try {
   }
   assert.deepEqual(errors, []);
   console.log(
-    "PASS: editable profile, path navigation, delivery, purchase, consumption, home visits, saved progress, tablet/phone layout, no page errors.",
+    "PASS: editable profile, path navigation, delivery, café and restaurant purchases, saved meals, consumption, home visits, saved progress, tablet/phone layout, no page errors.",
   );
   await page.goto(base);
   await page

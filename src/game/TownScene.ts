@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { stops, town } from "../content/town";
+import { restaurant, stops, town } from "../content/town";
 import type { Neighbor, Snapshot } from "../types";
 type Rect = { x: number; y: number; w: number; h: number };
 type Callbacks = {
@@ -475,7 +475,7 @@ export class TownScene extends Phaser.Scene {
         .lineBetween(wx, y + 104, wx + 44, y + 104);
       g.fillStyle(0xbd9870).fillRect(wx - 6, y + 132, 56, 10);
     }
-    if (kind === "cafe") {
+    if (kind === "cafe" || kind === "restaurant") {
       for (let i = 0; i < 8; i++) {
         g.fillStyle(i % 2 ? 0xfff8e4 : 0xc88676).fillRoundedRect(
           x + 10 + (i * (w - 20)) / 8,
@@ -525,6 +525,17 @@ export class TownScene extends Phaser.Scene {
     pond.fillStyle(0x82aa79).fillEllipse(950, 205, 25, 13);
     this.flower(951, 203, 0xf5c1c5);
     this.obstacles.push({ x: 825, y: 165, w: 195, h: 120 });
+    this.building(
+      600,
+      220,
+      210,
+      127,
+      0xd5a052,
+      0xffefca,
+      restaurant.name,
+      "restaurant",
+    );
+    this.text(705, 288, "RESTAURANT", 14, "#785734");
     this.building(222, 241, 220, 167, 0xbb7c68, 0xffefca, "Cloud Café", "cafe");
     this.building(
       1010,

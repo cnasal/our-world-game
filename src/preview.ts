@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { avatarColors, drinks, stops, town } from "./content/town";
+import { avatarColors, shopItems, stops, town } from "./content/town";
 import type { GameAction, GameBridge, Snapshot } from "./types";
 const KEY = "our-world-preview-v1";
 function fresh(): Snapshot {
@@ -17,13 +17,11 @@ function fresh(): Snapshot {
       delivery: "none",
       deliveries: 0,
     },
-    homes: avatarColors
-      .slice(0, 4)
-      .map((color, i) => ({
-        id: `neighbor-${i + 1}`,
-        name: `Neighbor ${i + 1}`,
-        color,
-      })),
+    homes: avatarColors.slice(0, 4).map((color, i) => ({
+      id: `neighbor-${i + 1}`,
+      name: `Neighbor ${i + 1}`,
+      color,
+    })),
     receipts: [
       {
         id: "welcome",
@@ -113,10 +111,10 @@ export function usePreview(): GameBridge {
           break;
         case "buy":
         case "use": {
-          const item = drinks.find((i) => i.id === action.itemId);
+          const item = shopItems.find((i) => i.id === action.itemId);
           if (!item) throw new Error("Unknown item.");
           if (action.type === "buy") {
-            near("cafe");
+            near(item.shop);
             if (c.balance < item.price)
               throw new Error("Try a delivery to earn a few more coins.");
             c.inventory[item.id] = (c.inventory[item.id] ?? 0) + 1;

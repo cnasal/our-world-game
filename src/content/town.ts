@@ -25,6 +25,80 @@ export const drinks = [
     color: "#f8efb9",
   },
 ] as const;
+export const restaurant = {
+  name: "The Nasal Restaurant",
+  welcome:
+    "Welcome, hungry neighbor! Choose something tasty, then open your bag to enjoy it.",
+};
+export const meals = [
+  {
+    id: "restaurant-spaghetti",
+    name: "Spaghetti",
+    description: "Twirl your noodles in tasty tomato sauce.",
+    price: 11,
+    emoji: "🍝",
+    color: "#f8dfb9",
+  },
+  {
+    id: "restaurant-sorbet",
+    name: "Sorbet",
+    description: "A cool, fruity scoop for a sweet treat.",
+    price: 5,
+    emoji: "🍧",
+    color: "#f8d9e2",
+  },
+  {
+    id: "restaurant-hamburger",
+    name: "Hamburger",
+    description: "A juicy burger tucked into a soft bun.",
+    price: 12,
+    emoji: "🍔",
+    color: "#deebca",
+  },
+  {
+    id: "restaurant-lemonade",
+    name: "Lemonade",
+    description: "A sunny glass of sweet and tangy lemonade.",
+    price: 6,
+    emoji: "🍋",
+    color: "#f8efb9",
+  },
+  {
+    id: "sunny-pizza",
+    name: "Pizza",
+    description: "A cheesy slice with tasty tomato sauce.",
+    price: 10,
+    emoji: "🍕",
+    color: "#f8dfb9",
+  },
+] as const;
+// Earlier menu items stay in the catalog so saved treats can still be enjoyed.
+const earlierMeals = [
+  {
+    id: "garden-soup",
+    name: "Garden soup",
+    description: "A warm bowl full of colorful vegetables.",
+    price: 7,
+    emoji: "🍲",
+    color: "#deebca",
+  },
+  {
+    id: "fluffy-pancakes",
+    name: "Fluffy pancakes",
+    description: "A cozy stack with sweet berries on top.",
+    price: 9,
+    emoji: "🥞",
+    color: "#f6dfd6",
+  },
+] as const;
+// Keep item IDs forever, even when changing a meal's name.
+export const shopItems = [
+  ...drinks.map((item) => ({ ...item, shop: "cafe" as const })),
+  ...[...meals, ...earlierMeals].map((item) => ({
+    ...item,
+    shop: "restaurant" as const,
+  })),
+];
 export const avatarColors = [
   "#db856f",
   "#8c95cc",
@@ -36,6 +110,7 @@ export const avatarColors = [
 export const town = { width: 1440, height: 1040, spawn: { x: 720, y: 665 } };
 export const stops = [
   { id: "cafe", name: "Cloud Café", x: 332, y: 465 },
+  { id: "restaurant", name: restaurant.name, x: 705, y: 405 },
   { id: "post", name: "Little Post", x: 1110, y: 465 },
   { id: "home", name: "Home", x: 450, y: 830 },
   { id: "neighbors", name: "Neighbor homes", x: 990, y: 830 },

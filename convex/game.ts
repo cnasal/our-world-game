@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import type { GenericId } from "convex/values";
 import { query, mutation, type QueryCtx, type MutationCtx } from "./functions";
-import { avatarColors, drinks, stops, town } from "../src/content/town";
+import { avatarColors, shopItems, stops, town } from "../src/content/town";
 async function member(
   ctx: QueryCtx | MutationCtx,
   worldId: GenericId<"worlds">,
@@ -242,11 +242,11 @@ export const transact = mutation({
         deliveries: c.deliveries + 1,
       });
     } else {
-      const item = drinks.find((d) => d.id === args.itemId);
+      const item = shopItems.find((d) => d.id === args.itemId);
       if (!item) throw new Error("That item is not available.");
       const inventory = { ...c.inventory };
       if (args.type === "buy") {
-        near("cafe");
+        near(item.shop);
         if (c.balance < item.price)
           throw new Error("You need a few more coins. Try a delivery!");
         amount = -item.price;
