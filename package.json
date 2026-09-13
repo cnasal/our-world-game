@@ -1,0 +1,36 @@
+{
+  "name": "our-world",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "backend": "convex dev",
+    "test": "vitest run",
+    "test:browser": "node scripts/browser-check.mjs",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"convex/*.ts\" \"tests/*.ts\" \"scripts/*.mjs\" \"*.{md,json,ts,html}\""
+  },
+  "dependencies": {
+    "@clerk/react": "latest",
+    "convex": "latest",
+    "lucide-react": "latest",
+    "phaser": "^3.90.0",
+    "react": "latest",
+    "react-dom": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "@vitejs/plugin-react": "latest",
+    "convex-test": "latest",
+    "jsdom": "latest",
+    "playwright": "latest",
+    "prettier": "^3.9.6",
+    "typescript": "latest",
+    "vite": "latest",
+    "vitest": "latest"
+  }
+}

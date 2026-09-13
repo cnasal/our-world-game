@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env.local
+.env.*.local
+*.log
+.playwright/
+
+# Environment files may contain deployment credentials.
+.env
+.env.*
+!.env.example
