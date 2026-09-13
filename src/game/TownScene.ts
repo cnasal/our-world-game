@@ -1,3 +1,4 @@
+import { library } from "../content/library";
 import Phaser from "phaser";
 import { restaurant, stops, town } from "../content/town";
 import type { Neighbor, Snapshot } from "../types";
@@ -503,7 +504,8 @@ export class TownScene extends Phaser.Scene {
     }
     this.rect(0, 484, 1440, 123, 0xe8d9b6, 20);
     this.rect(652, 110, 137, 930, 0xe8d9b6, 24);
-    this.rect(254, 790, 858, 86, 0xe8d9b6, 24);
+    this.rect(125, 790, 987, 86, 0xe8d9b6, 24);
+    this.rect(125, 744, 70, 80, 0xe8d9b6);
     this.rect(298, 418, 70, 150, 0xe8d9b6);
     this.rect(1075, 425, 70, 120, 0xe8d9b6);
     this.rect(416, 730, 70, 90, 0xe8d9b6);
@@ -567,6 +569,29 @@ export class TownScene extends Phaser.Scene {
       "Neighbor homes",
       "home",
     );
+    this.building(
+      70,
+      610,
+      180,
+      127,
+      0x8c95bb,
+      0xf5edd7,
+      library.name,
+      "library",
+    );
+    // Colorful books in the library windows.
+    for (const wx of [96, 182]) {
+      for (let i = 0; i < 4; i++) {
+        this.rect(
+          wx + i * 10,
+          714 - (i % 2) * 5,
+          7,
+          18 + (i % 2) * 5,
+          [0xbd7f70, 0x86a28a, 0xd3ad60, 0x929bc1][i],
+          1,
+        );
+      }
+    }
     // Café terrace.
     const terrace = this.add.graphics();
     terrace.fillStyle(0xd7c9a5).fillRoundedRect(108, 398, 100, 74, 14);
@@ -593,7 +618,7 @@ export class TownScene extends Phaser.Scene {
       [82, 230, 1.5],
       [1280, 231, 1.4],
       [550, 269, 1.25],
-      [92, 708, 1.3],
+      [48, 917, 1.0],
       [1240, 725, 1.35],
       [179, 887, 1.25],
       [575, 935, 1.15],

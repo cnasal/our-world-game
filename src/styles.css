@@ -2075,3 +2075,20 @@ input {
     transition: none !important;
   }
 }
+
+.library-reader h3 {
+  margin: 24px 0 16px;
+  font-size: 22px;
+}
+.story-page {
+  font-size: 19px;
+  line-height: 1.8;
+  color: #465c45;
+}
+.book-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 22px;
+}

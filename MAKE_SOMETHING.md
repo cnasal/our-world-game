@@ -16,6 +16,12 @@ Try this idea with an AI helper:
 
 A new drink automatically appears in the café and works with the bag and bank. Existing item IDs are permanent: changing an ID can hide items people already bought, so change the display name instead.
 
+## Write a library story
+
+Open `src/content/library.ts`. Each book has a title, a short description, and a list of pages. Write a few short sentences for each page. Stories are free to read at The Nasal Library.
+
+> Add a three-page story about a cat who learns to bake. Keep the sentences short and give it a happy ending.
+
 ## Write something kind
 
 Think of a welcoming sentence for the café or a funny description for a drink. Short sentences are great, especially for our younger readers.

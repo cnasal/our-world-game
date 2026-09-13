@@ -1,3 +1,5 @@
+import { library } from "./library";
+
 // Start here when adding things to the town. Prices are pretend coins.
 export const drinks = [
   {
@@ -112,6 +114,7 @@ export const stops = [
   { id: "cafe", name: "Cloud Café", x: 332, y: 465 },
   { id: "restaurant", name: restaurant.name, x: 705, y: 405 },
   { id: "post", name: "Little Post", x: 1110, y: 465 },
+  { id: "library", name: library.name, x: 160, y: 795 },
   { id: "home", name: "Home", x: 450, y: 830 },
   { id: "neighbors", name: "Neighbor homes", x: 990, y: 830 },
 ] as const;

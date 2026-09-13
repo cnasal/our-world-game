@@ -62,6 +62,36 @@ try {
     /A little room for lovely things/,
   );
   await page.getByRole("button", { name: "Close dialog" }).click();
+  await page.getByRole("button", { name: /The Nasal Library/ }).click();
+  await page
+    .getByRole("button", { name: "Read The Dragon Who Sneezed", exact: true })
+    .waitFor({ timeout: 15000 });
+  await page
+    .getByRole("button", { name: "Read The Dragon Who Sneezed", exact: true })
+    .click();
+  assert.equal(
+    await page
+      .getByRole("button", { name: "Previous", exact: true })
+      .isDisabled(),
+    true,
+  );
+  assert.match(await page.locator(".story-page").innerText(), /tickly nose/);
+  await page.getByRole("button", { name: "Next page", exact: true }).click();
+  assert.match(await page.locator(".story-page").innerText(), /three bubbles/);
+  await page.getByRole("button", { name: "Previous", exact: true }).click();
+  assert.match(await page.locator(".story-page").innerText(), /tickly nose/);
+  await page.getByRole("button", { name: "Next page", exact: true }).click();
+  await page.getByRole("button", { name: "Next page", exact: true }).click();
+  assert.match(await page.locator("dialog").innerText(), /The end!/);
+  await page
+    .getByRole("button", { name: "Choose another book", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Read The Moon Garden", exact: true })
+    .click();
+  assert.match(await page.locator(".story-page").innerText(), /silver seed/);
+  assert.match(await page.locator(".profile-bottom").innerText(), /47/);
+  await page.getByRole("button", { name: "Close dialog" }).click();
   await page.getByRole("button", { name: "My home", exact: true }).click();
   await page.getByRole("heading", { name: "Daisy’s home" }).waitFor();
   await page.screenshot({ path: "/tmp/our-world-home.png", fullPage: true });
@@ -94,6 +124,30 @@ try {
     await page
       .getByRole("button", { name: "Back to town", exact: true })
       .click();
+    await page.getByRole("button", { name: /The Nasal Library/ }).click();
+    await page
+      .getByRole("button", { name: "Read The Missing Sock", exact: true })
+      .waitFor({ timeout: 15000 });
+    await page
+      .getByRole("button", { name: "Read The Missing Sock", exact: true })
+      .click();
+    assert.equal(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > innerWidth,
+      ),
+      false,
+    );
+    assert.equal(
+      await page
+        .locator("dialog")
+        .evaluate((dialog) => dialog.scrollWidth > dialog.clientWidth),
+      false,
+    );
+    await page.screenshot({
+      path: `/tmp/our-world-library-${name}.png`,
+      fullPage: true,
+    });
+    await page.getByRole("button", { name: "Close dialog" }).click();
     await page.screenshot({
       path: `/tmp/our-world-${name}.png`,
       fullPage: true,
@@ -101,7 +155,7 @@ try {
   }
   assert.deepEqual(errors, []);
   console.log(
-    "PASS: editable profile, path navigation, delivery, café and restaurant purchases, saved meals, consumption, home visits, saved progress, tablet/phone layout, no page errors.",
+    "PASS: editable profile, path navigation, delivery, café and restaurant purchases, saved meals, consumption, library navigation and reading, home visits, saved progress, tablet/phone layout, no page errors.",
   );
   await page.goto(base);
   await page

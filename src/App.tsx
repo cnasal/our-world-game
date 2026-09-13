@@ -21,6 +21,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Backpack,
+  BookOpen,
   Check,
   ChevronRight,
   CircleHelp,
@@ -53,6 +54,7 @@ import {
   stops,
   town,
 } from "./content/town";
+import { books, library } from "./content/library";
 import { GameCanvas } from "./game/GameCanvas";
 import type { TownScene } from "./game/TownScene";
 import { usePreview } from "./preview";
@@ -333,6 +335,7 @@ type Panel =
   | "bank"
   | "cafe"
   | "restaurant"
+  | "library"
   | "post"
   | "neighbors"
   | "help"
@@ -393,7 +396,9 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
     if (id === "home")
       void perform({ type: "room", room: `home:${c.id}` }, "Welcome home!");
     else if (id === "exit") void perform({ type: "room", room: "town" });
-    else if (["cafe", "restaurant", "post", "neighbors"].includes(id))
+    else if (
+      ["cafe", "restaurant", "library", "post", "neighbors"].includes(id)
+    )
       open(id as Panel);
   };
   const go = async (id: string) => {
@@ -413,6 +418,7 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
     bank: "Your pocket of possibilities",
     cafe: "Something lovely to sip",
     restaurant: restaurant.name,
+    library: library.name,
     post: "A little job. A big help.",
     neighbors: "A neighborhood of friends",
     help: "Make yourself at home",
@@ -545,11 +551,13 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
                       ? "Visit café"
                       : nearby === "restaurant"
                         ? "Visit restaurant"
-                        : nearby === "post"
-                          ? "Pick up a job"
-                          : nearby === "home"
-                            ? "Go inside"
-                            : "Visit a neighbor"}{" "}
+                        : nearby === "library"
+                          ? "Visit library"
+                          : nearby === "post"
+                            ? "Pick up a job"
+                            : nearby === "home"
+                              ? "Go inside"
+                              : "Visit a neighbor"}{" "}
                   <span>E</span>
                 </button>
               )}
@@ -685,6 +693,13 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
               onClick={() => void go("restaurant")}
             />
             <Place
+              icon={<BookOpen size={20} />}
+              title={library.name}
+              subtitle="Free stories to read"
+              color="lilac"
+              onClick={() => void go("library")}
+            />
+            <Place
               icon={<Send size={20} />}
               title="Little Post"
               subtitle="Small jobs, happy neighbors"
@@ -772,6 +787,7 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
             if (!busy) setPanel(null);
           }}
         >
+          {panel === "library" && <Library />}
           {panel === "profile" && (
             <form
               onSubmit={(e) => {
@@ -1155,6 +1171,77 @@ function Place({
       </span>
       <ChevronRight size={16} />
     </button>
+  );
+}
+function Library() {
+  const [bookId, setBookId] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const book = books.find((entry) => entry.id === bookId);
+  if (!book)
+    return (
+      <>
+        <p className="modal-intro">{library.welcome}</p>
+        {books.map((entry) => (
+          <div className="shop-item" key={entry.id}>
+            <span
+              className="drink-art"
+              style={{ background: entry.color }}
+              aria-hidden="true"
+            >
+              {entry.emoji}
+            </span>
+            <div>
+              <h3>{entry.title}</h3>
+              <p>{entry.description}</p>
+            </div>
+            <button
+              className="secondary"
+              aria-label={`Read ${entry.title}`}
+              onClick={() => {
+                setBookId(entry.id);
+                setPage(0);
+              }}
+            >
+              Read
+            </button>
+          </div>
+        ))}
+      </>
+    );
+  return (
+    <div className="library-reader">
+      <button className="text-button" onClick={() => setBookId(null)}>
+        <ArrowLeft size={16} /> Back to books
+      </button>
+      <h3>
+        {book.emoji} {book.title}
+      </h3>
+      <div aria-live="polite" aria-atomic="true">
+        <p className="story-page">{book.pages[page]}</p>
+        <p className="small muted">
+          Page {page + 1} of {book.pages.length}
+          {page === book.pages.length - 1 ? " · The end!" : ""}
+        </p>
+      </div>
+      <div className="book-navigation">
+        <button
+          className="secondary"
+          disabled={page === 0}
+          onClick={() => setPage(page - 1)}
+        >
+          <ArrowLeft size={16} /> Previous
+        </button>
+        {page < book.pages.length - 1 ? (
+          <button className="primary" onClick={() => setPage(page + 1)}>
+            Next page <ArrowRight size={16} />
+          </button>
+        ) : (
+          <button className="primary" onClick={() => setBookId(null)}>
+            Choose another book
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 function Modal({
