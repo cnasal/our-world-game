@@ -281,6 +281,128 @@ describe("private shared town", () => {
       (await owner.query(api.game.snapshot, { worldId })).character.balance,
     ).toBe(50);
   });
+  test("resting validates furniture and distance, shares poses, and returns to a safe spot", async () => {
+    const { owner, worldId, t } = await setup();
+    const before = await owner.query(api.game.snapshot, { worldId });
+    await expect(
+      owner.mutation(api.game.rest, { worldId, furnitureId: "bed" }),
+    ).rejects.toThrow("not in this room");
+    const room = `home:${before.character.id}`;
+    await owner.mutation(api.game.enter, { worldId, room });
+    await expect(
+      owner.mutation(api.game.rest, { worldId, furnitureId: "bed" }),
+    ).rejects.toThrow("Walk to");
+    await owner.mutation(api.game.move, { worldId, x: 865, y: 530 });
+    await owner.mutation(api.game.rest, { worldId, furnitureId: "bed" });
+    await owner.mutation(api.game.rest, { worldId, furnitureId: "bed" });
+    await owner.mutation(api.game.move, { worldId, x: 720, y: 665 });
+    let people = await owner.query(api.game.people, { worldId, room });
+    expect(people[0]).toMatchObject({ restId: "bed", x: 981, y: 490 });
+    await owner.mutation(api.game.rest, { worldId, furnitureId: null });
+    await owner.mutation(api.game.rest, { worldId, furnitureId: null });
+    people = await owner.query(api.game.people, { worldId, room });
+    expect(people[0]).toMatchObject({ x: 865, y: 530 });
+    expect(people[0].restId).toBeUndefined();
+    await owner.mutation(api.game.rest, { worldId, furnitureId: "bed" });
+    await owner.mutation(api.game.enter, { worldId, room: "town" });
+    expect(
+      (await owner.query(api.game.people, { worldId, room: "town" }))[0].restId,
+    ).toBeUndefined();
+    expect(
+      (await owner.query(api.game.snapshot, { worldId })).character,
+    ).toEqual(before.character);
+    await expect(
+      t
+        .withIdentity({ subject: "user_outsider" })
+        .mutation(api.game.rest, { worldId, furnitureId: null }),
+    ).rejects.toThrow();
+  });
+  test("only one classmate can occupy a chair, and standing frees it", async () => {
+    const { owner, worldId, t } = await setup();
+    await t.mutation(internal.admin.addMember, {
+      worldId,
+      subject: "user_classmate",
+    });
+    const classmate = t.withIdentity({ subject: "user_classmate" });
+    const players = [owner, classmate];
+    for (const player of players) {
+      await player.mutation(api.game.enter, { worldId, room: "school" });
+      await player.mutation(api.game.move, { worldId, x: 590, y: 585 });
+    }
+    const results = await Promise.allSettled(
+      players.map((player) =>
+        player.mutation(api.game.rest, { worldId, furnitureId: "chair-math" }),
+      ),
+    );
+    expect(
+      results.filter((result) => result.status === "fulfilled"),
+    ).toHaveLength(1);
+    const winner = results.findIndex((result) => result.status === "fulfilled");
+    expect(
+      (
+        await classmate.query(api.game.people, { worldId, room: "school" })
+      ).filter((person) => person.restId === "chair-math"),
+    ).toHaveLength(1);
+    await players[winner].mutation(api.game.rest, {
+      worldId,
+      furnitureId: null,
+    });
+    await players[1 - winner].mutation(api.game.rest, {
+      worldId,
+      furnitureId: "chair-math",
+    });
+    expect(
+      (await owner.query(api.game.people, { worldId, room: "school" })).filter(
+        (person) => person.restId === "chair-math",
+      ),
+    ).toHaveLength(1);
+  });
+  test("abandoned chairs can be reclaimed and late heartbeats cannot reclaim them again", async () => {
+    const { owner, worldId, t } = await setup();
+    await t.mutation(internal.admin.addMember, {
+      worldId,
+      subject: "user_classmate",
+    });
+    const classmate = t.withIdentity({ subject: "user_classmate" });
+    for (const player of [owner, classmate]) {
+      await player.mutation(api.game.enter, { worldId, room: "school" });
+      await player.mutation(api.game.move, { worldId, x: 590, y: 585 });
+    }
+    await owner.mutation(api.game.rest, { worldId, furnitureId: "chair-math" });
+    const saved = await owner.query(api.game.snapshot, { worldId });
+    await t.run(async (ctx) => {
+      const position = await ctx.db
+        .query("presence")
+        .withIndex("by_character", (q) =>
+          q.eq("characterId", saved.character.id),
+        )
+        .unique();
+      await ctx.db.patch(position!._id, { updatedAt: Date.now() - 50000 });
+    });
+    await classmate.mutation(api.game.rest, {
+      worldId,
+      furnitureId: "chair-math",
+    });
+    await owner.mutation(api.game.move, {
+      worldId,
+      x: 480,
+      y: 580,
+      restId: "chair-math",
+    });
+    const people = await owner.query(api.game.people, {
+      worldId,
+      room: "school",
+    });
+    expect(
+      people.find((person) => person.id === saved.character.id),
+    ).toMatchObject({ x: 590, y: 585 });
+    expect(
+      people.find((person) => person.id === saved.character.id)?.restId,
+    ).toBeUndefined();
+    expect(
+      people.filter((person) => person.restId === "chair-math"),
+    ).toHaveLength(1);
+  });
   test("renaming preserves ownership, home, balance, and inventory", async () => {
     const { owner, worldId } = await setup();
     const before = await owner.query(api.game.snapshot, { worldId });

@@ -2131,3 +2131,10 @@ input {
   gap: 8px;
   padding: 12px 0;
 }
+
+.furniture-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 0;
+}

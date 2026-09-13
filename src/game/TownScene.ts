@@ -1,3 +1,4 @@
+import { furnitureFor } from "../content/furniture";
 import { school, schoolStations } from "../content/school";
 import { library } from "../content/library";
 import Phaser from "phaser";
@@ -43,7 +44,22 @@ export class TownScene extends Phaser.Scene {
     });
     this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
       if (this.pausedInput || !this.avatar) return;
+      if (this.current?.character.restId) {
+        this.callbacks.interact("stand");
+        return;
+      }
       const p = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+      const furniture = furnitureFor(this.room).find(
+        ({ hit }) =>
+          p.x >= hit.x &&
+          p.x <= hit.x + hit.w &&
+          p.y >= hit.y &&
+          p.y <= hit.y + hit.h,
+      );
+      if (furniture) {
+        this.goTo(`rest:${furniture.id}`);
+        return;
+      }
       if (this.room === "town") {
         const hit = stops.find(
           (s) => Math.abs(s.x - p.x) < 145 && p.y > s.y - 245 && p.y < s.y + 30,
@@ -123,6 +139,7 @@ export class TownScene extends Phaser.Scene {
           snapshot.homes.find((h) => `home:${h.id}` === this.room)?.name ??
             snapshot.character.name,
         );
+      this.drawChairs();
       this.avatar = this.makeAvatar(
         snapshot.character.name,
         snapshot.character.color,
@@ -143,6 +160,12 @@ export class TownScene extends Phaser.Scene {
       ).setPosition(x, y);
       this.resizeCamera();
     }
+    if (old?.character.restId !== snapshot.character.restId) {
+      this.path = [];
+      this.arrival = undefined;
+      this.avatar.setPosition(snapshot.character.x, snapshot.character.y);
+    }
+    this.poseAvatar(this.avatar, snapshot.character.restId);
     const active = neighbors.filter(
       (n) =>
         n.id !== snapshot.character.id &&
@@ -173,6 +196,7 @@ export class TownScene extends Phaser.Scene {
         this.others.set(n.id, item);
       }
       item.target = n;
+      this.poseAvatar(item.view, n.restId);
       if (
         n.emote &&
         n.emoteAt &&
@@ -192,11 +216,24 @@ export class TownScene extends Phaser.Scene {
       }
     }
   }
+  private destination(id: string) {
+    if (id.startsWith("rest:"))
+      return furnitureFor(this.room).find((item) => item.id === id.slice(5))
+        ?.approach;
+    return (
+      this.room === "school"
+        ? schoolStations
+        : this.room === "town"
+          ? stops
+          : []
+    ).find((stop) => stop.id === id);
+  }
   goTo(id: string) {
-    if (this.room !== "town" && this.room !== "school") return;
-    const stop = (this.room === "school" ? schoolStations : stops).find(
-      (s) => s.id === id,
-    );
+    if (this.current?.character.restId) {
+      this.callbacks.interact("stand");
+      return;
+    }
+    const stop = this.destination(id);
     if (!stop) return;
     this.arrival = id;
     this.path = this.findPath(stop.x, stop.y);
@@ -242,6 +279,12 @@ export class TownScene extends Phaser.Scene {
         }
       }
     }
+    if (this.current?.character.restId) {
+      if (dx || dy) this.callbacks.interact("stand");
+      dx = 0;
+      dy = 0;
+      this.path = [];
+    }
     const length = Math.hypot(dx, dy),
       speed = Math.min(delta, 50) * 0.24;
     if (length) {
@@ -256,9 +299,7 @@ export class TownScene extends Phaser.Scene {
     if (!this.path.length && this.arrival && !this.pausedInput) {
       const id = this.arrival;
       this.arrival = undefined;
-      const stop = (this.room === "school" ? schoolStations : stops).find(
-        (s) => s.id === id,
-      )!;
+      const stop = this.destination(id)!;
       if (
         Phaser.Math.Distance.Between(
           this.avatar.x,
@@ -294,6 +335,19 @@ export class TownScene extends Phaser.Scene {
               95,
           )?.id ?? null;
     } else if (this.avatar.y > 745) nearby = "exit";
+    const furniture = furnitureFor(this.room).find(
+      (item) =>
+        Math.hypot(
+          item.approach.x - this.avatar.x,
+          item.approach.y - this.avatar.y,
+        ) < 65,
+    );
+    if (
+      furniture &&
+      (!nearby || (nearby === "exit" && Math.abs(this.avatar.x - 720) > 90))
+    )
+      nearby = `rest:${furniture.id}`;
+    if (this.current?.character.restId) nearby = "stand";
     if (nearby !== this.lastNearby) {
       this.lastNearby = nearby;
       this.callbacks.nearby(nearby);
@@ -769,6 +823,31 @@ export class TownScene extends Phaser.Scene {
       { x: 885, y: 661, w: 181, h: 96 },
     );
   }
+  private drawChairs() {
+    for (const item of furnitureFor(this.room).filter((entry) => entry.chair)) {
+      this.rect(item.x - 22, item.y - 33, 44, 32, 0xa08063, 6);
+      this.rect(item.x - 18, item.y - 28, 36, 21, 0x9faf98, 5);
+      this.rect(item.x - 23, item.y - 9, 46, 20, 0x819c84, 5);
+      this.obstacles.push({ x: item.x - 22, y: item.y - 12, w: 44, h: 22 });
+    }
+  }
+  private poseAvatar(view: Phaser.GameObjects.Container, restId?: string) {
+    const pose = furnitureFor(this.room).find(
+      (item) => item.id === restId,
+    )?.pose;
+    const body = view.getAt(1) as Phaser.GameObjects.Graphics;
+    body
+      .setAngle(pose === "lie" ? -90 : 0)
+      .setScale(1, pose === "sit" ? 0.78 : 1);
+    if (pose) body.y = 0;
+    const shadow = view.getAt(0) as Phaser.GameObjects.Graphics;
+    shadow.setVisible(!pose);
+    const label = view.getAt(2) as Phaser.GameObjects.Text;
+    label.setText(
+      view.getData("label") +
+        (pose === "lie" ? " · resting" : pose === "sit" ? " · sitting" : ""),
+    );
+  }
   private makeAvatar(name: string, color: string, own: boolean) {
     const container = this.add.container(0, 0);
     const shadow = this.add
@@ -803,6 +882,7 @@ export class TownScene extends Phaser.Scene {
         padding: { x: 9, y: 5 },
       })
       .setOrigin(0.5);
+    container.setData("label", `${name}${own ? " · you" : ""}`);
     container.add([shadow, g, label]);
     return container;
   }

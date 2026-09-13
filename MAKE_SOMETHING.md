@@ -28,6 +28,12 @@ Open `src/content/school.ts`. Each lesson has short questions, answer choices, a
 
 > Add a little lesson about shapes with three questions and friendly hints.
 
+## Take a cozy break
+
+Tap a sofa or chair to sit, or tap a bed to lie down. The buttons below the game also help you walk to furniture. Use **Stand up**, an arrow key, or tap the floor to get up. You can rest in a neighbor’s home, too.
+
+Furniture locations live in `src/content/furniture.ts`. Each spot needs a clear place beside it to stand up.
+
 ## Write something kind
 
 Think of a welcoming sentence for the café or a funny description for a drink. Short sentences are great, especially for our younger readers.

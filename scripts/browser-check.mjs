@@ -6,8 +6,31 @@ const browser = await chromium.launch({
   args: ["--no-sandbox"],
 });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1050 } });
+const standButton = page
+  .getByRole("navigation", { name: "Places to rest" })
+  .getByRole("button", { name: "Stand up", exact: true });
 const errors = [];
 page.on("pageerror", (e) => errors.push(e.message));
+async function restAt(name, id) {
+  await page.getByRole("button", { name, exact: true }).click();
+  await standButton.waitFor({ timeout: 15000 });
+  const saved = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem("our-world-preview-v1")),
+  );
+  assert.equal(saved.character.restId, id);
+}
+async function standUp() {
+  await standButton.click();
+  await standButton.waitFor({ state: "detached" });
+  assert.equal(
+    await page.evaluate(
+      () =>
+        JSON.parse(localStorage.getItem("our-world-preview-v1")).character
+          .restId,
+    ),
+    undefined,
+  );
+}
 try {
   await page.goto(`${base}/?preview`);
   await page.waitForSelector("canvas");
@@ -62,6 +85,8 @@ try {
     /A little room for lovely things/,
   );
   await page.getByRole("button", { name: "Close dialog" }).click();
+  await restAt("Sit on café chair (left)", "cafe-chair-left");
+  await standUp();
   await page.getByRole("button", { name: /The Nasal Library/ }).click();
   await page
     .getByRole("button", { name: "Read The Dragon Who Sneezed", exact: true })
@@ -174,6 +199,12 @@ try {
     /That's right!/,
   );
   await page.getByRole("button", { name: "Close dialog" }).click();
+  await restAt("Sit on reading chair", "chair-words");
+  await page.screenshot({
+    path: "/tmp/our-world-sitting-school.png",
+    fullPage: true,
+  });
+  await standUp();
   await page.screenshot({
     path: "/tmp/our-world-classroom.png",
     fullPage: true,
@@ -185,6 +216,24 @@ try {
   );
   await page.getByRole("button", { name: "My home", exact: true }).click();
   await page.getByRole("heading", { name: "Daisy’s home" }).waitFor();
+  await restAt("Sit on sofa", "sofa");
+  await page.screenshot({
+    path: "/tmp/our-world-sitting-home.png",
+    fullPage: true,
+  });
+  await standUp();
+  await restAt("Lie on bed", "bed");
+  await page.screenshot({
+    path: "/tmp/our-world-resting-bed.png",
+    fullPage: true,
+  });
+  await page.reload();
+  await page.waitForSelector("canvas");
+  await standButton.waitFor();
+  await page.keyboard.press("ArrowLeft");
+  await standButton.waitFor({ state: "detached" });
+  await restAt("Sit on comfy chair", "home-chair");
+  await standUp();
   await page.screenshot({ path: "/tmp/our-world-home.png", fullPage: true });
   await page.getByRole("button", { name: "Back to town", exact: true }).click();
   await page.reload();
@@ -212,6 +261,8 @@ try {
       .getByRole("button", { name: "Visit" })
       .click();
     await page.getByRole("heading", { name: "Neighbor 2’s home" }).waitFor();
+    await restAt("Lie on bed", "bed");
+    await standUp();
     await page
       .getByRole("button", { name: "Back to town", exact: true })
       .click();
@@ -274,7 +325,7 @@ try {
   }
   assert.deepEqual(errors, []);
   console.log(
-    "PASS: editable profile, path navigation, delivery, café and restaurant purchases, saved meals, consumption, library navigation and reading, school entry, classroom walking, hints, lessons and exit, home visits, saved progress, tablet/phone layout, no page errors.",
+    "PASS: editable profile, path navigation, delivery, café and restaurant purchases, saved meals, consumption, library navigation and reading, school entry, classroom walking, hints, lessons and exit, sitting and lying down, standing and saved poses, home visits, saved progress, tablet/phone layout, no page errors.",
   );
   await page.goto(base);
   await page

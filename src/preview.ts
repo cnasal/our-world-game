@@ -1,3 +1,4 @@
+import { furnitureFor } from "./content/furniture";
 import { useCallback, useRef, useState } from "react";
 import { avatarColors, shopItems, stops, town } from "./content/town";
 import type { GameAction, GameBridge, Snapshot } from "./types";
@@ -58,7 +59,9 @@ export function usePreview(): GameBridge {
   const move = useCallback((x: number, y: number) => {
     current.current = {
       ...current.current,
-      character: { ...current.current.character, x, y },
+      character: current.current.character.restId
+        ? current.current.character
+        : { ...current.current.character, x, y },
     };
   }, []);
   const act = useCallback(
@@ -91,8 +94,26 @@ export function usePreview(): GameBridge {
           break;
         case "room":
           c.room = action.room;
+          delete c.restId;
           Object.assign(c, town.spawn);
           break;
+        case "rest": {
+          const furniture = furnitureFor(c.room);
+          if (action.furnitureId === null) {
+            const previous = furniture.find((item) => item.id === c.restId);
+            if (previous) Object.assign(c, previous.approach);
+            delete c.restId;
+            break;
+          }
+          const seat = furniture.find((item) => item.id === action.furnitureId);
+          if (!seat) throw new Error("That furniture is not in this room.");
+          if (c.restId === seat.id) break;
+          if (c.restId) throw new Error("Stand up first.");
+          if (Math.hypot(c.x - seat.approach.x, c.y - seat.approach.y) > 95)
+            throw new Error(`Walk to the ${seat.name.toLowerCase()} first.`);
+          Object.assign(c, { x: seat.x, y: seat.y, restId: seat.id });
+          break;
+        }
         case "startJob":
           near("post");
           if (c.delivery === "carrying")

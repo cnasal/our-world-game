@@ -1,3 +1,4 @@
+import { furnitureFor } from "./content/furniture";
 import { school, schoolStations } from "./content/school";
 import { School } from "./School";
 import {
@@ -229,11 +230,18 @@ function LiveWorld({ worldId }: { worldId: GenericId<"worlds"> }) {
     enter = useMutation(api.enter),
     profile = useMutation(api.profile),
     transact = useMutation(api.transact),
+    rest = useMutation(api.rest),
     emote = useMutation(api.emote);
   const connection = useConvexConnectionState();
   const [ready, setReady] = useState(false),
     [networkError, setNetworkError] = useState("");
   const pos = useRef({ ...town.spawn });
+  const posture = useRef<string | null>(null);
+  const ownPresence = neighbors?.find(
+    (person) => person.id === saved?.character.id,
+  );
+  posture.current = ownPresence?.restId ?? null;
+  const acting = useRef(false);
   const pending = useRef<Promise<unknown> | null>(null);
   const mounted = useRef(true);
   useEffect(() => {
@@ -249,9 +257,10 @@ function LiveWorld({ worldId }: { worldId: GenericId<"worlds"> }) {
   }, [enter, worldId]);
   const move = useCallback(
     (x: number, y: number) => {
+      if (acting.current) return;
       pos.current = { x, y };
       if (!connection.isWebSocketConnected || pending.current) return;
-      pending.current = moveMutation({ worldId, x, y })
+      pending.current = moveMutation({ worldId, x, y, restId: posture.current })
         .catch((e) => setNetworkError(displayError(e)))
         .finally(() => {
           pending.current = null;
@@ -265,22 +274,44 @@ function LiveWorld({ worldId }: { worldId: GenericId<"worlds"> }) {
         throw new Error(
           "Reconnecting. Please wait a moment before making changes.",
         );
-      await pending.current;
-      if (action.type === "room") {
-        await enter({ worldId, room: action.room });
-        pos.current = { ...town.spawn };
-        setRoom(action.room);
-      } else if (action.type === "profile")
-        await profile({ worldId, name: action.name, color: action.color });
-      else {
-        await moveMutation({ worldId, ...pos.current });
-        await transact({
-          worldId,
-          type: action.type,
-          itemId: "itemId" in action ? action.itemId : undefined,
-          requestId:
-            "requestId" in action ? action.requestId : crypto.randomUUID(),
-        });
+      acting.current = true;
+      try {
+        await pending.current;
+        if (action.type === "room") {
+          await enter({ worldId, room: action.room });
+          pos.current = { ...town.spawn };
+          posture.current = null;
+          setRoom(action.room);
+        } else if (action.type === "rest") {
+          await moveMutation({
+            worldId,
+            ...pos.current,
+            restId: posture.current,
+          });
+          const value = await rest({
+            worldId,
+            furnitureId: action.furnitureId,
+          });
+          pos.current = { x: value.x, y: value.y };
+          posture.current = value.restId ?? null;
+        } else if (action.type === "profile")
+          await profile({ worldId, name: action.name, color: action.color });
+        else {
+          await moveMutation({
+            worldId,
+            ...pos.current,
+            restId: posture.current,
+          });
+          await transact({
+            worldId,
+            type: action.type,
+            itemId: "itemId" in action ? action.itemId : undefined,
+            requestId:
+              "requestId" in action ? action.requestId : crypto.randomUUID(),
+          });
+        }
+      } finally {
+        acting.current = false;
       }
     },
     [
@@ -289,6 +320,7 @@ function LiveWorld({ worldId }: { worldId: GenericId<"worlds"> }) {
       moveMutation,
       profile,
       transact,
+      rest,
       worldId,
     ],
   );
@@ -305,7 +337,13 @@ function LiveWorld({ worldId }: { worldId: GenericId<"worlds"> }) {
   if (!saved || !neighbors || !ready) return <Loading />;
   const snapshot = {
     ...saved,
-    character: { ...saved.character, room, ...town.spawn },
+    character: {
+      ...saved.character,
+      room,
+      x: ownPresence?.x ?? town.spawn.x,
+      y: ownPresence?.y ?? town.spawn.y,
+      restId: ownPresence?.restId,
+    },
   };
   const bridge: GameBridge = {
     snapshot,
@@ -398,7 +436,10 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
     setPanel(value);
   };
   const interact = (id: string) => {
-    if (id === "home")
+    if (id === "stand") void perform({ type: "rest", furnitureId: null });
+    else if (id.startsWith("rest:"))
+      void perform({ type: "rest", furnitureId: id.slice(5) });
+    else if (id === "home")
       void perform({ type: "room", room: `home:${c.id}` }, "Welcome home!");
     else if (id === "school")
       void perform(
@@ -576,23 +617,31 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
                   className="interact-button"
                   onClick={() => interact(nearby)}
                 >
-                  {nearby.startsWith("lesson:")
-                    ? `Try ${schoolStations.find((entry) => entry.id === nearby)?.name ?? "a lesson"}`
-                    : nearby === "exit"
-                      ? "Back to town"
-                      : nearby === "cafe"
-                        ? "Visit café"
-                        : nearby === "restaurant"
-                          ? "Visit restaurant"
-                          : nearby === "library"
-                            ? "Visit library"
-                            : nearby === "school"
-                              ? "Visit school"
-                              : nearby === "post"
-                                ? "Pick up a job"
-                                : nearby === "home"
-                                  ? "Go inside"
-                                  : "Visit a neighbor"}{" "}
+                  {nearby === "stand"
+                    ? "Stand up"
+                    : nearby.startsWith("rest:")
+                      ? furnitureFor(c.room).find(
+                          (item) => item.id === nearby.slice(5),
+                        )?.pose === "lie"
+                        ? "Lie on bed"
+                        : "Sit down"
+                      : nearby.startsWith("lesson:")
+                        ? `Try ${schoolStations.find((entry) => entry.id === nearby)?.name ?? "a lesson"}`
+                        : nearby === "exit"
+                          ? "Back to town"
+                          : nearby === "cafe"
+                            ? "Visit café"
+                            : nearby === "restaurant"
+                              ? "Visit restaurant"
+                              : nearby === "library"
+                                ? "Visit library"
+                                : nearby === "school"
+                                  ? "Visit school"
+                                  : nearby === "post"
+                                    ? "Pick up a job"
+                                    : nearby === "home"
+                                      ? "Go inside"
+                                      : "Visit a neighbor"}{" "}
                   <span>E</span>
                 </button>
               )}
@@ -618,6 +667,29 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
               ))}
             </nav>
           )}
+          <nav className="furniture-actions" aria-label="Places to rest">
+            {c.restId ? (
+              <button
+                className="secondary"
+                onClick={() => interact("stand")}
+                disabled={busy}
+              >
+                Stand up
+              </button>
+            ) : (
+              furnitureFor(c.room).map((item) => (
+                <button
+                  className="secondary"
+                  key={item.id}
+                  onClick={() => scene.current?.goTo(`rest:${item.id}`)}
+                  disabled={busy}
+                >
+                  {item.pose === "lie" ? "Lie on" : "Sit on"}{" "}
+                  {item.name.toLowerCase()}
+                </button>
+              ))
+            )}
+          </nav>
           <div className="map-caption">
             <span>
               <span className="key-cap">↑</span>

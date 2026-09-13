@@ -1,3 +1,4 @@
+import { furnitureFor } from "../src/content/furniture";
 import { v } from "convex/values";
 import type { GenericId } from "convex/values";
 import { query, mutation, type QueryCtx, type MutationCtx } from "./functions";
@@ -108,6 +109,7 @@ export const people = query({
           x: p.x,
           y: p.y,
           updatedAt: p.updatedAt,
+          restId: p.restId,
           emote: p.emote,
           emoteAt: p.emoteAt,
         };
@@ -116,12 +118,24 @@ export const people = query({
   },
 });
 export const move = mutation({
-  args: { worldId: v.id("worlds"), x: v.number(), y: v.number() },
+  args: {
+    worldId: v.id("worlds"),
+    x: v.number(),
+    y: v.number(),
+    restId: v.optional(v.union(v.string(), v.null())),
+  },
   handler: async (ctx, args) => {
     const c = await member(ctx, args.worldId);
     if (!Number.isFinite(args.x) || !Number.isFinite(args.y))
       throw new Error("Invalid position.");
     const p = await position(ctx, c._id);
+    // A delayed movement message must not undo a sit/stand transition.
+    if (args.restId !== undefined && (args.restId ?? undefined) !== p?.restId)
+      return;
+    if (p?.restId) {
+      await ctx.db.patch(p._id, { updatedAt: Date.now() });
+      return;
+    }
     const value = {
       worldId: args.worldId,
       characterId: c._id,
@@ -151,11 +165,61 @@ export const enter = mutation({
       worldId,
       characterId: c._id,
       room,
+      restId: undefined,
       ...town.spawn,
       updatedAt: Date.now(),
     };
     if (p) await ctx.db.patch(p._id, value);
     else await ctx.db.insert("presence", value);
+  },
+});
+export const rest = mutation({
+  args: { worldId: v.id("worlds"), furnitureId: v.union(v.string(), v.null()) },
+  handler: async (ctx, { worldId, furnitureId }) => {
+    const c = await member(ctx, worldId);
+    const p = await position(ctx, c._id);
+    if (!p) throw new Error("Enter the town first.");
+    const furniture = furnitureFor(p.room);
+    if (furnitureId === null) {
+      const previous = furniture.find((item) => item.id === p.restId);
+      const spot = previous?.approach ?? { x: p.x, y: p.y };
+      await ctx.db.patch(p._id, {
+        ...spot,
+        restId: undefined,
+        updatedAt: Date.now(),
+      });
+      return { ...spot, restId: undefined };
+    }
+    const seat = furniture.find((item) => item.id === furnitureId);
+    if (!seat) throw new Error("That furniture is not in this room.");
+    if (p.restId === furnitureId) return { x: p.x, y: p.y, restId: p.restId };
+    if (p.restId) throw new Error("Stand up first.");
+    if (Math.hypot(p.x - seat.approach.x, p.y - seat.approach.y) > 95)
+      throw new Error(`Walk to the ${seat.name.toLowerCase()} first.`);
+    const people = await ctx.db
+      .query("presence")
+      .withIndex("by_world_room", (q) =>
+        q.eq("worldId", worldId).eq("room", p.room),
+      )
+      .collect();
+    if (
+      people.some(
+        (other) =>
+          other.characterId !== c._id &&
+          other.restId === furnitureId &&
+          Date.now() - other.updatedAt < 45000,
+      )
+    )
+      throw new Error("Someone is resting there. Try another spot.");
+    // Reclaim abandoned seats without letting a returning heartbeat occupy them twice.
+    for (const other of people.filter(
+      (entry) => entry.characterId !== c._id && entry.restId === furnitureId,
+    )) {
+      await ctx.db.patch(other._id, { ...seat.approach, restId: undefined });
+    }
+    const value = { x: seat.x, y: seat.y, restId: seat.id };
+    await ctx.db.patch(p._id, { ...value, updatedAt: Date.now() });
+    return value;
   },
 });
 export const emote = mutation({

@@ -4,6 +4,7 @@ export type Character = {
   color: string;
   balance: number;
   room: string;
+  restId?: string;
   x: number;
   y: number;
   inventory: Record<string, number>;
@@ -15,6 +16,7 @@ export type Neighbor = {
   name: string;
   color: string;
   room: string;
+  restId?: string;
   x: number;
   y: number;
   updatedAt: number;
@@ -35,7 +37,8 @@ export type GameAction =
   | { type: "use"; itemId: string; requestId: string }
   | { type: "startJob" }
   | { type: "finishJob"; requestId: string }
-  | { type: "room"; room: string };
+  | { type: "room"; room: string }
+  | { type: "rest"; furnitureId: string | null };
 export type GameBridge = {
   snapshot: Snapshot;
   neighbors: Neighbor[];

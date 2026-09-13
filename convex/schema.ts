@@ -28,6 +28,7 @@ export default defineSchema({
     x: v.number(),
     y: v.number(),
     updatedAt: v.number(),
+    restId: v.optional(v.string()),
     emote: v.optional(v.string()),
     emoteAt: v.optional(v.number()),
   })
