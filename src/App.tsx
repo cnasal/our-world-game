@@ -1,3 +1,4 @@
+import { iceCreamShop, iceCreams } from "./content/iceCream";
 import { shelter, pets, petFor } from "./content/pets";
 import { toyStore, toys } from "./content/toys";
 import { UpdateNotice } from "./UpdateNotice";
@@ -413,6 +414,7 @@ type Panel =
   | "bag"
   | "bank"
   | "cafe"
+  | "icecream"
   | "shelter"
   | "toys"
   | "restaurant"
@@ -598,6 +600,7 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
     bag: "Your little collection",
     bank: "Your pocket of possibilities",
     cafe: "Something lovely to sip",
+    icecream: iceCreamShop.name,
     shelter: shelter.name,
     toys: toyStore.name,
     restaurant: restaurant.name,
@@ -754,43 +757,45 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
                   className="interact-button"
                   onClick={() => interact(nearby)}
                 >
-                  {nearby === "shelter"
-                    ? "Visit animal shelter"
-                    : nearby === "toys"
-                      ? "Visit toy store"
-                      : nearby === "shop-counter"
-                        ? shop?.action
-                        : nearby === "stand"
-                          ? "Stand up"
-                          : nearby.startsWith("rest:")
-                            ? furnitureFor(c.room).find(
-                                (item) => item.id === nearby.slice(5),
-                              )?.pose === "lie"
-                              ? "Lie on bed"
-                              : "Sit down"
-                            : nearby.startsWith("lesson:")
-                              ? `Try ${schoolStations.find((entry) => entry.id === nearby)?.name ?? "a lesson"}`
-                              : nearby === "exit"
-                                ? exitName
-                                : nearby === "hotel"
-                                  ? "Enter hotel"
-                                  : nearby === "hotel-buffet"
-                                    ? "Free buffet"
-                                    : nearby.startsWith("door:")
-                                      ? `Enter ${hotelStops(c.room).find((entry) => entry.id === nearby)?.name ?? "room"}`
-                                      : nearby === "cafe"
-                                        ? "Visit café"
-                                        : nearby === "restaurant"
-                                          ? "Visit restaurant"
-                                          : nearby === "library"
-                                            ? "Visit library"
-                                            : nearby === "school"
-                                              ? "Visit school"
-                                              : nearby === "post"
-                                                ? "Pick up a job"
-                                                : nearby === "home"
-                                                  ? "Go inside"
-                                                  : "Visit a neighbor"}{" "}
+                  {nearby === "icecream"
+                    ? "Visit ice cream shop"
+                    : nearby === "shelter"
+                      ? "Visit animal shelter"
+                      : nearby === "toys"
+                        ? "Visit toy store"
+                        : nearby === "shop-counter"
+                          ? shop?.action
+                          : nearby === "stand"
+                            ? "Stand up"
+                            : nearby.startsWith("rest:")
+                              ? furnitureFor(c.room).find(
+                                  (item) => item.id === nearby.slice(5),
+                                )?.pose === "lie"
+                                ? "Lie on bed"
+                                : "Sit down"
+                              : nearby.startsWith("lesson:")
+                                ? `Try ${schoolStations.find((entry) => entry.id === nearby)?.name ?? "a lesson"}`
+                                : nearby === "exit"
+                                  ? exitName
+                                  : nearby === "hotel"
+                                    ? "Enter hotel"
+                                    : nearby === "hotel-buffet"
+                                      ? "Free buffet"
+                                      : nearby.startsWith("door:")
+                                        ? `Enter ${hotelStops(c.room).find((entry) => entry.id === nearby)?.name ?? "room"}`
+                                        : nearby === "cafe"
+                                          ? "Visit café"
+                                          : nearby === "restaurant"
+                                            ? "Visit restaurant"
+                                            : nearby === "library"
+                                              ? "Visit library"
+                                              : nearby === "school"
+                                                ? "Visit school"
+                                                : nearby === "post"
+                                                  ? "Pick up a job"
+                                                  : nearby === "home"
+                                                    ? "Go inside"
+                                                    : "Visit a neighbor"}{" "}
                   <span>E</span>
                 </button>
               )}
@@ -989,6 +994,13 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
               <h2>Little places to go</h2>
               <MapPin size={17} />
             </div>
+            <Place
+              icon={<Sun size={20} />}
+              title={iceCreamShop.name}
+              subtitle="A happy scoop · 5 coins"
+              color="peach"
+              onClick={() => void go("icecream")}
+            />
             <Place
               icon={<Heart size={20} />}
               title={shelter.name}
@@ -1272,21 +1284,28 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
               ))}
             </>
           )}
-          {(panel === "cafe" || panel === "restaurant" || panel === "toys") && (
+          {(panel === "cafe" ||
+            panel === "restaurant" ||
+            panel === "toys" ||
+            panel === "icecream") && (
             <>
               <p className="modal-intro">
-                {panel === "toys"
-                  ? toyStore.welcome
-                  : panel === "restaurant"
-                    ? restaurant.welcome
-                    : "A treat for your travels, or a cozy moment at home. Everything goes into your bag."}
+                {panel === "icecream"
+                  ? iceCreamShop.welcome
+                  : panel === "toys"
+                    ? toyStore.welcome
+                    : panel === "restaurant"
+                      ? restaurant.welcome
+                      : "A treat for your travels, or a cozy moment at home. Everything goes into your bag."}
               </p>
               <div className="shop-list">
-                {(panel === "toys"
-                  ? toys
-                  : panel === "restaurant"
-                    ? meals
-                    : drinks
+                {(panel === "icecream"
+                  ? iceCreams
+                  : panel === "toys"
+                    ? toys
+                    : panel === "restaurant"
+                      ? meals
+                      : drinks
                 ).map((item) => (
                   <div className="shop-item" key={item.id}>
                     <span
@@ -1436,9 +1455,11 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
                             },
                             item.shop === "toys"
                               ? `You played with your ${item.name.toLowerCase()}! It stays in your bag.`
-                              : item.shop === "restaurant"
-                                ? "Yum! That was a lovely meal."
-                                : "A happy little sip. Delicious!",
+                              : item.shop === "icecream"
+                                ? "Yum! That was a lovely ice cream."
+                                : item.shop === "restaurant"
+                                  ? "Yum! That was a lovely meal."
+                                  : "A happy little sip. Delicious!",
                           );
                           scene.current?.wave(
                             item.shop === "toys" ? "✨" : "❤️",

@@ -108,3 +108,11 @@ The shelter also has seats and accepts package deliveries.
 Run `node scripts/pet-check.mjs` against the development preview to check adoption,
 following, saved ownership, room changes, shared pets, and phone layout. Its test
 coins are kept only in the browser's isolated preview save.
+
+### Ice cream shop
+
+`src/content/iceCream.ts` holds The Nasal Ice Cream Shop's flavors and prices.
+Each scoop costs 5 coins and goes into the bag until enjoyed. The shop is just
+past the hotel and supports walking inside, seats, companions, and deliveries.
+Keep flavor IDs stable so saved ice creams still work. Run
+`node scripts/ice-cream-check.mjs` against the development preview for its walkthrough.

@@ -1,3 +1,4 @@
+import { iceCreamShop } from "../content/iceCream";
 import { shelter, petFor } from "../content/pets";
 import { PetFollower } from "./PetFollower";
 import { toyStore } from "../content/toys";
@@ -666,7 +667,7 @@ export class TownScene extends Phaser.Scene {
         .lineBetween(wx, y + 104, wx + 44, y + 104);
       g.fillStyle(0xbd9870).fillRect(wx - 6, y + 132, 56, 10);
     }
-    if (kind === "cafe" || kind === "restaurant") {
+    if (kind === "cafe" || kind === "restaurant" || kind === "icecream") {
       for (let i = 0; i < 8; i++) {
         g.fillStyle(i % 2 ? 0xfff8e4 : 0xc88676).fillRoundedRect(
           x + 10 + (i * (w - 20)) / 8,
@@ -816,7 +817,22 @@ export class TownScene extends Phaser.Scene {
       "toys",
     );
     this.text(1360, 295, "TOYS", 18, "#655783");
-    this.tree(1765, 210, 0.9);
+    this.tree(1765, 160, 0.9);
+    this.rect(1875, 418, 70, 150, 0xe8d9b6);
+    this.building(
+      1810,
+      241,
+      200,
+      167,
+      0xc98d9f,
+      0xffefdb,
+      iceCreamShop.name,
+      "icecream",
+    );
+    const cone = this.add.graphics();
+    cone.fillStyle(0xd7a86f).fillTriangle(1895, 279, 1925, 279, 1910, 311);
+    cone.fillStyle(0xf3c3d3).fillCircle(1910, 271, 19);
+    this.tree(2050, 680, 1.2);
     this.rect(1275, 790, 370, 86, 0xe8d9b6, 20);
     this.building(
       1510,
@@ -912,6 +928,20 @@ export class TownScene extends Phaser.Scene {
             );
       }
       this.text(720, 372, "Stories for everyone", 19, "#fff9e7");
+    } else if (shop.id === "icecream") {
+      const scoops = this.add.graphics();
+      for (const [i, color] of [
+        0xf0c4d2, 0xd8b38c, 0xeaf0d0, 0xc8ddec,
+      ].entries()) {
+        this.rect(571 + i * 76, 318, 66, 24, 0xd9e5e0, 5);
+        scoops.fillStyle(color).fillEllipse(604 + i * 76, 324, 48, 20);
+      }
+      for (const x of [500, 940]) {
+        this.rect(x - 65, 491, 130, 58, 0xc29486, 10);
+        this.rect(x - 70, 482, 140, 40, 0xfff0dc, 14);
+        this.obstacles.push({ x: x - 70, y: 482, w: 140, h: 67 });
+      }
+      this.text(720, 372, "Every scoop: 5 coins", 20, "#fff9e7");
     } else if (shop.id === "shelter") {
       for (const x of [435, 965]) {
         this.rect(x - 55, 465, 110, 64, 0x98b18b, 22);

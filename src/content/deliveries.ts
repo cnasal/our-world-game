@@ -15,6 +15,7 @@ export function deliveryPlaces(
     ...stops
       .filter((stop) =>
         [
+          "icecream",
           "shelter",
           "toys",
           "cafe",

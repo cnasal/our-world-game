@@ -1,8 +1,16 @@
+import { iceCreamShop } from "./iceCream";
 import { shelter } from "./pets";
 import { toyStore } from "./toys";
 import { restaurant } from "./town";
 import { library } from "./library";
 export const shopInteriors = [
+  {
+    id: "icecream",
+    room: "shop:icecream",
+    name: iceCreamShop.name,
+    action: "Choose ice cream",
+    wall: 0xf5dfe8,
+  },
   {
     id: "shelter",
     room: "shop:shelter",

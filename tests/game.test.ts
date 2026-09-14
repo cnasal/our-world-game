@@ -1,3 +1,4 @@
+import { iceCreams } from "../src/content/iceCream";
 import { pets } from "../src/content/pets";
 import { shopInteriors } from "../src/content/interiors";
 import { deliveryPlaces } from "../src/content/deliveries";
@@ -795,19 +796,51 @@ test("simultaneous adoption requests cannot buy two pets", async () => {
     await ctx.db.patch(state.character.id, { balance: 200 });
   });
   const results = await Promise.allSettled(
-    pets
-      .slice(0, 2)
-      .map((pet) =>
-        owner.mutation(api.game.transact, {
-          worldId,
-          type: "adopt",
-          itemId: pet.id,
-          requestId: pet.id,
-        }),
-      ),
+    pets.slice(0, 2).map((pet) =>
+      owner.mutation(api.game.transact, {
+        worldId,
+        type: "adopt",
+        itemId: pet.id,
+        requestId: pet.id,
+      }),
+    ),
   );
   expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
   const final = await owner.query(api.game.snapshot, { worldId });
   expect(final.character.balance).toBe(120);
   expect(final.character.inventory).toEqual({});
+});
+
+test("ice cream purchases require the right shop and can be enjoyed only once", async () => {
+  const { owner, worldId } = await setup();
+  const item = iceCreams[0];
+  const buy = {
+    worldId,
+    type: "buy" as const,
+    itemId: item.id,
+    requestId: "ice-cream-buy",
+  };
+  await owner.mutation(api.game.enter, { worldId, room: "shop:cafe" });
+  await expect(owner.mutation(api.game.transact, buy)).rejects.toThrow();
+  await owner.mutation(api.game.enter, { worldId, room: "town" });
+  await owner.mutation(api.game.move, { worldId, x: 1910, y: 465 });
+  expect(
+    (await owner.query(api.game.people, { worldId, room: "town" }))[0].x,
+  ).toBe(1910);
+  await owner.mutation(api.game.enter, { worldId, room: "shop:icecream" });
+  await owner.mutation(api.game.transact, buy);
+  await owner.mutation(api.game.transact, buy);
+  let state = await owner.query(api.game.snapshot, { worldId });
+  expect(state.character.balance).toBe(45);
+  expect(state.character.inventory[item.id]).toBe(1);
+  await owner.mutation(api.game.enter, { worldId, room: "town" });
+  const enjoy = { ...buy, type: "use" as const, requestId: "ice-cream-enjoy" };
+  await owner.mutation(api.game.transact, enjoy);
+  await owner.mutation(api.game.transact, enjoy);
+  await expect(
+    owner.mutation(api.game.transact, { ...enjoy, requestId: "empty-scoop" }),
+  ).rejects.toThrow();
+  state = await owner.query(api.game.snapshot, { worldId });
+  expect(state.character.inventory[item.id]).toBe(0);
+  expect(state.character.balance).toBe(45);
 });
