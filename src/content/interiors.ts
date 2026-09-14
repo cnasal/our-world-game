@@ -1,3 +1,4 @@
+import { resaleShop } from "./resale";
 import { bank } from "./bank";
 import { iceCreamShop } from "./iceCream";
 import { shelter } from "./pets";
@@ -5,6 +6,13 @@ import { toyStore } from "./toys";
 import { restaurant } from "./town";
 import { library } from "./library";
 export const shopInteriors = [
+  {
+    id: "resale",
+    room: "shop:resale",
+    name: resaleShop.name,
+    action: "Sell my items",
+    wall: 0xe6dfed,
+  },
   {
     id: "bank",
     room: "shop:bank",

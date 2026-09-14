@@ -1,3 +1,4 @@
+import { resaleShop } from "../content/resale";
 import { itemArt } from "./itemArt";
 import { homeItemSpots } from "../content/homeItems";
 import { bank } from "../content/bank";
@@ -914,6 +915,18 @@ export class TownScene extends Phaser.Scene {
     cone.fillStyle(0xd7a86f).fillTriangle(1895, 279, 1925, 279, 1910, 311);
     cone.fillStyle(0xf3c3d3).fillCircle(1910, 271, 19);
     this.tree(2050, 680, 1.2);
+    this.rect(2175, 418, 70, 150, 0xe8d9b6);
+    this.building(
+      2110,
+      241,
+      200,
+      167,
+      0xa092b9,
+      0xf6edd7,
+      resaleShop.name,
+      "resale",
+    );
+    this.text(2210, 301, "BUY BACK", 17, "#665879");
     this.rect(1275, 790, 670, 86, 0xe8d9b6, 20);
     this.building(
       1510,
@@ -1011,6 +1024,30 @@ export class TownScene extends Phaser.Scene {
             );
       }
       this.text(720, 372, "Stories for everyone", 19, "#fff9e7");
+    } else if (shop.id === "resale") {
+      for (const x of [410, 970]) {
+        this.rect(x - 35, 240, 85, 132, 0xa88b71, 6);
+        for (let row = 0; row < 3; row++) {
+          this.rect(x - 28, 265 + row * 38, 70, 7, 0xe2c5a3);
+          this.rect(
+            x - 20,
+            247 + row * 38,
+            20,
+            18,
+            [0xc9857c, 0x959dc6, 0x92b38a][row],
+            4,
+          );
+          this.rect(
+            x + 10,
+            247 + row * 38,
+            20,
+            18,
+            [0x92b38a, 0xc9857c, 0x959dc6][row],
+            4,
+          );
+        }
+      }
+      this.text(720, 372, "Your things, a new adventure", 18, "#fff9e7");
     } else if (shop.id === "bank") {
       this.rect(960, 234, 95, 136, 0x8daba2, 10);
       this.rect(969, 244, 77, 116, 0xbbcdc4, 7);

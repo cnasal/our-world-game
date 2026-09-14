@@ -1,3 +1,4 @@
+import { resalePrice } from "../src/content/resale";
 import { moveHomeItem } from "../src/content/homeItems";
 import { transferCoins } from "../src/content/bank";
 import { validHomeStyle } from "../src/content/homes";
@@ -298,6 +299,7 @@ export const transact = mutation({
       v.literal("withdraw"),
       v.literal("adopt"),
       v.literal("eatFree"),
+      v.literal("sell"),
       v.literal("buy"),
       v.literal("use"),
       v.literal("startJob"),
@@ -433,7 +435,15 @@ export const transact = mutation({
       const item = shopItems.find((d) => d.id === args.itemId);
       if (!item) throw new Error("That item is not available.");
       const inventory = { ...c.inventory };
-      if (args.type === "buy") {
+      if (args.type === "sell") {
+        if (p?.room !== "shop:resale")
+          throw new Error("Come inside the resale shop to sell an item.");
+        if (!(inventory[item.id] > 0))
+          throw new Error("That item is not in your backpack.");
+        inventory[item.id] -= 1;
+        amount = resalePrice(item.price);
+        label = `Sold ${item.name}`;
+      } else if (args.type === "buy") {
         near(item.shop);
         if (c.balance < item.price)
           throw new Error("You need a few more coins. Try a delivery!");

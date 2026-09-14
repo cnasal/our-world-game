@@ -151,3 +151,13 @@ and enjoyed from the bag. Pets and delivery parcels are separate from this syste
 server checks home ownership and changes the bag and placed items atomically,
 using retry receipts to prevent duplicates. Existing homes start with no placed
 items. Run `node scripts/unpack-check.mjs` against the isolated development preview.
+
+### Resale shop
+
+The Nasal Resale Shop buys one backpack item at a time for half its catalog price,
+rounded down. `src/content/resale.ts` defines the name and pricing rule. Each sale
+button shows the payout before selling. Unpacked items must be packed first;
+pets, savings, homes, and parcels are not sale items. Live sales verify membership,
+shop entry, and ownership, then remove the item and award pocket coins atomically
+with retry receipts. The shop supports seats, visiting pets, and deliveries.
+Run `node scripts/resale-check.mjs` against the development preview for the walkthrough.

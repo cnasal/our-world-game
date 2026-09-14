@@ -43,6 +43,7 @@ export type Snapshot = {
   receipts: Receipt[];
 };
 export type GameAction =
+  | { type: "sell"; itemId: string; requestId: string }
   | {
       type: "unpack" | "pack" | "playHome";
       spotId: string;

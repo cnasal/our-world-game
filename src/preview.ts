@@ -1,3 +1,4 @@
+import { resalePrice } from "./content/resale";
 import { moveHomeItem } from "./content/homeItems";
 import { transferCoins } from "./content/bank";
 import { validHomeStyle } from "./content/homes";
@@ -227,11 +228,20 @@ export function usePreview(): GameBridge {
           label = `Delivery to ${destination.name}`;
           break;
         }
+        case "sell":
         case "buy":
         case "use": {
           const item = shopItems.find((i) => i.id === action.itemId);
           if (!item) throw new Error("Unknown item.");
-          if (action.type === "buy") {
+          if (action.type === "sell") {
+            if (c.room !== "shop:resale")
+              throw new Error("Come inside the resale shop to sell an item.");
+            if (!(c.inventory[item.id] > 0))
+              throw new Error("That item is not in your backpack.");
+            c.inventory[item.id]--;
+            amount = resalePrice(item.price);
+            label = `Sold ${item.name}`;
+          } else if (action.type === "buy") {
             near(item.shop);
             if (c.balance < item.price)
               throw new Error("Try a delivery to earn a few more coins.");

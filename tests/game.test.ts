@@ -1056,3 +1056,96 @@ test("unpacking, playing, and packing preserve ownership and item counts", async
     after.homes.find((home) => home.id === before.character.id)?.homeItems,
   ).toEqual({});
 });
+
+test("resale pays the server price once and only sells backpack items", async () => {
+  const { t, owner, worldId } = await setup();
+  await owner.mutation(api.game.enter, { worldId, room: "shop:toys" });
+  await owner.mutation(api.game.transact, {
+    worldId,
+    type: "buy",
+    itemId: "toy-stuffed-duck",
+    requestId: "buy-resale",
+  });
+  const sell = {
+    worldId,
+    type: "sell" as const,
+    itemId: "toy-stuffed-duck",
+    requestId: "sell-once",
+  };
+  await expect(owner.mutation(api.game.transact, sell)).rejects.toThrow(
+    "resale shop",
+  );
+  const before = await owner.query(api.game.snapshot, { worldId });
+  await owner.mutation(api.game.enter, {
+    worldId,
+    room: `home:${before.character.id}`,
+  });
+  await owner.mutation(api.game.transact, {
+    worldId,
+    type: "unpack",
+    itemId: sell.itemId,
+    spotId: "shelf-left",
+    requestId: "unpack-resale",
+  });
+  await owner.mutation(api.game.enter, { worldId, room: "shop:resale" });
+  await expect(owner.mutation(api.game.transact, sell)).rejects.toThrow(
+    "backpack",
+  );
+  await expect(
+    t
+      .withIdentity({ subject: "user_stranger" })
+      .mutation(api.game.transact, sell),
+  ).rejects.toThrow();
+  await expect(
+    owner.mutation(api.game.transact, { ...sell, itemId: "pet-duck" }),
+  ).rejects.toThrow();
+  await owner.mutation(api.game.enter, {
+    worldId,
+    room: `home:${before.character.id}`,
+  });
+  await owner.mutation(api.game.transact, {
+    worldId,
+    type: "pack",
+    spotId: "shelf-left",
+    requestId: "pack-resale",
+  });
+  await owner.mutation(api.game.enter, { worldId, room: "shop:resale" });
+  await owner.mutation(api.game.transact, sell);
+  await owner.mutation(api.game.transact, sell);
+  await expect(
+    owner.mutation(api.game.transact, { ...sell, requestId: "empty-resale" }),
+  ).rejects.toThrow();
+  const after = await owner.query(api.game.snapshot, { worldId });
+  expect(after.character.inventory[sell.itemId]).toBe(0);
+  expect(after.character.balance).toBe(42);
+  expect(after.character.savings).toBe(0);
+  expect(
+    after.receipts.filter((r) => r.label === "Sold Stuffed duck"),
+  ).toHaveLength(1);
+});
+
+test("simultaneous sales cannot sell one item twice", async () => {
+  const { owner, worldId } = await setup();
+  await owner.mutation(api.game.enter, { worldId, room: "shop:cafe" });
+  await owner.mutation(api.game.transact, {
+    worldId,
+    type: "buy",
+    itemId: "berry-milk",
+    requestId: "buy-for-sale",
+  });
+  await owner.mutation(api.game.enter, { worldId, room: "shop:resale" });
+  const results = await Promise.allSettled(
+    ["sale-a", "sale-b"].map((requestId) =>
+      owner.mutation(api.game.transact, {
+        worldId,
+        type: "sell",
+        itemId: "berry-milk",
+        requestId,
+      }),
+    ),
+  );
+  expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+  const { character } = await owner.query(api.game.snapshot, { worldId });
+  expect(character.balance).toBe(46);
+  expect(character.inventory["berry-milk"]).toBe(0);
+});
