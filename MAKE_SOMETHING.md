@@ -40,6 +40,12 @@ Visit The Nasal Hotel at the end of the street. Walk through the lobby doors to 
 
 Room names, rug colors, and free meals live in `src/content/hotel.ts`. Hotel meals are eaten in the dining room and never cost coins.
 
+## Deliver a package
+
+Visit Little Post and choose a destination before taking your parcel. The delivery button guides you there. Bring home deliveries inside the right home, and hotel room deliveries inside the chosen room. Press **Deliver · +15** when you arrive. Old café parcels still go to Cloud Café.
+
+The list of delivery places lives in `src/content/deliveries.ts`.
+
 ## Write something kind
 
 Think of a welcoming sentence for the café or a funny description for a drink. Short sentences are great, especially for our younger readers.

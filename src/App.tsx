@@ -1,3 +1,4 @@
+import { deliveryPlaces } from "./content/deliveries";
 import {
   hotel,
   hotelMeals,
@@ -314,8 +315,11 @@ function LiveWorld({ worldId }: { worldId: GenericId<"worlds"> }) {
             worldId,
             type: action.type,
             itemId: "itemId" in action ? action.itemId : undefined,
+            destination:
+              action.type === "startJob" ? action.destination : undefined,
             requestId:
-              "requestId" in action ? action.requestId : crypto.randomUUID(),
+              ("requestId" in action ? action.requestId : undefined) ??
+              crypto.randomUUID(),
           });
         }
       } finally {
@@ -403,6 +407,7 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
   const scene = useRef<TownScene | null>(null);
   const [schoolLesson, setSchoolLesson] = useState<string | null>(null);
   const lock = useRef(false);
+  const [deliveryChoice, setDeliveryChoice] = useState("cafe");
   const [name, setName] = useState(c.name),
     [color, setColor] = useState(c.color);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -503,6 +508,43 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
         `On our way to ${stops.find((s) => s.id === id)?.name ?? "town"}…`,
       );
     }
+  };
+  const destinations = deliveryPlaces(homes);
+  const parcel = destinations.find(
+    (place) => place.id === (c.deliveryTarget ?? "cafe"),
+  );
+  const selectedDelivery =
+    destinations.find((place) => place.id === deliveryChoice) ??
+    destinations[0];
+  const canDeliver =
+    c.delivery === "carrying" &&
+    parcel &&
+    (parcel.room === c.room ||
+      (parcel.outside && c.room === "town" && nearby === parcel.stopId));
+  const deliver = (
+    <div className="handoff">
+      <Package size={23} />
+      <div>
+        <strong>A parcel for {parcel?.name}</strong>
+        <small>Thank you for bringing it!</small>
+      </div>
+      <button
+        className="primary"
+        disabled={busy}
+        onClick={() =>
+          void perform(
+            { type: "finishJob", requestId: crypto.randomUUID() },
+            "Delivery complete! You earned 15 coins.",
+          )
+        }
+      >
+        Deliver · +15
+      </button>
+    </div>
+  );
+  const goDelivery = () => {
+    if (parcel?.stopId) void go(parcel.stopId);
+    else if (parcel?.room) void perform({ type: "room", room: parcel.room });
   };
   const title = {
     profile: "A little more you",
@@ -830,8 +872,8 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
             </h2>
             <p>
               {c.delivery === "carrying"
-                ? "The café is waiting for its parcel. A small walk, a lovely reward."
-                : "The café could use a delivery. Pop over to Little Post to pick it up."}
+                ? `Your parcel is for ${parcel?.name ?? "your chosen place"}. Bring it over to earn your reward.`
+                : "Visit Little Post and choose where you would like to deliver a package."}
             </p>
             <div className="delivery-drawing" aria-hidden="true">
               <span className="delivery-dots">· · ·</span>
@@ -848,15 +890,18 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
             <button
               className="primary full"
               onClick={() =>
-                void go(c.delivery === "carrying" ? "cafe" : "post")
+                c.delivery === "carrying" ? goDelivery() : void go("post")
               }
             >
               {c.delivery === "carrying"
-                ? "Take it to the café"
+                ? parcel?.id === "cafe"
+                  ? "Take it to the café"
+                  : `Take it to ${parcel?.name ?? "your destination"}`
                 : "Let’s help out"}
               <ArrowRight size={17} />
             </button>
           </section>
+          {canDeliver && !panel && c.room !== "town" && deliver}
           <section className="places-card">
             <div className="section-title">
               <h2>Little places to go</h2>
@@ -1035,6 +1080,7 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
               </button>
             </form>
           )}
+          {canDeliver && deliver}
           {panel === "hotelDining" && (
             <>
               <p className="modal-intro">
@@ -1080,27 +1126,6 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
                   ? restaurant.welcome
                   : "A treat for your travels, or a cozy moment at home. Everything goes into your bag."}
               </p>
-              {panel === "cafe" && c.delivery === "carrying" && (
-                <div className="handoff">
-                  <Package size={23} />
-                  <div>
-                    <strong>You brought our parcel!</strong>
-                    <small>Thank you for helping out.</small>
-                  </div>
-                  <button
-                    className="primary"
-                    disabled={busy}
-                    onClick={() =>
-                      void perform(
-                        { type: "finishJob", requestId: crypto.randomUUID() },
-                        "Delivery complete! 15 coins for your helping hands.",
-                      )
-                    }
-                  >
-                    Deliver · +15
-                  </button>
-                </div>
-              )}
               <div className="shop-list">
                 {(panel === "restaurant" ? meals : drinks).map((item) => (
                   <div className="shop-item" key={item.id}>
@@ -1147,17 +1172,38 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
                 <span>Handle with a little love.</span>
               </div>
               <p className="modal-intro">
-                Cloud Café is waiting for a box of cups. Carry a parcel across
-                the square and earn <strong>15 coins</strong>. There’s no timer,
-                so enjoy the walk.
+                Choose where this package should go. Deliver it to earn{" "}
+                <strong>15 coins</strong>. There’s no timer, so enjoy the trip.
               </p>
+              <label className="field-label" htmlFor="delivery-destination">
+                Where would you like to deliver?
+              </label>
+              <select
+                id="delivery-destination"
+                value={
+                  c.delivery === "carrying"
+                    ? (c.deliveryTarget ?? "cafe")
+                    : selectedDelivery.id
+                }
+                disabled={busy || c.delivery === "carrying"}
+                onChange={(event) => setDeliveryChoice(event.target.value)}
+              >
+                {destinations.map((place) => (
+                  <option key={place.id} value={place.id}>
+                    {place.name}
+                  </option>
+                ))}
+              </select>
               <div className="job-route">
                 <span>
                   <Send size={17} /> Little Post
                 </span>
                 <ArrowRight size={19} />
                 <span>
-                  <Coffee size={17} /> Cloud Café
+                  <MapPin size={17} />{" "}
+                  {c.delivery === "carrying"
+                    ? parcel?.name
+                    : selectedDelivery.name}
                 </span>
               </div>
               <button
@@ -1165,8 +1211,12 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
                 disabled={busy || c.delivery === "carrying"}
                 onClick={() =>
                   void perform(
-                    { type: "startJob" },
-                    "Parcel picked up! Take it to Cloud Café.",
+                    {
+                      type: "startJob",
+                      destination: selectedDelivery.id,
+                      requestId: crypto.randomUUID(),
+                    },
+                    `Parcel picked up! Take it to ${selectedDelivery.name}.`,
                     true,
                   )
                 }
@@ -1240,7 +1290,7 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
                 <div className="handoff">
                   <Package />
                   <div>
-                    <strong>A parcel for Cloud Café</strong>
+                    <strong>A parcel for {parcel?.name}</strong>
                     <small>Deliver it to earn 15 coins.</small>
                   </div>
                 </div>
@@ -1344,7 +1394,8 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
                 <Package />
                 <span>
                   <strong>Lend a helping hand</strong>Pick up a parcel at Little
-                  Post. Deliver it to Cloud Café to earn 15 coins.
+                  Post. Choose a destination and deliver your parcel to earn 15
+                  coins.
                 </span>
               </p>
               <p>

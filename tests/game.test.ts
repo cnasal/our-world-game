@@ -1,3 +1,5 @@
+import { deliveryPlaces } from "../src/content/deliveries";
+import { stops } from "../src/content/town";
 import { guestRooms, hotel, hotelMeals } from "../src/content/hotel";
 import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
@@ -495,6 +497,115 @@ describe("private shared town", () => {
         .withIdentity({ subject: "user_outsider" })
         .mutation(api.game.transact, eat),
     ).rejects.toThrow();
+  });
+  test("every offered destination can receive a parcel exactly once", async () => {
+    const { owner, worldId } = await setup();
+    const homes = (await owner.query(api.game.snapshot, { worldId })).homes;
+    const places = deliveryPlaces(homes);
+    for (const [index, place] of places.entries()) {
+      await owner.mutation(api.game.enter, { worldId, room: "town" });
+      await owner.mutation(api.game.move, { worldId, x: 1110, y: 465 });
+      const pickup = {
+        worldId,
+        type: "startJob" as const,
+        destination: place.id,
+        requestId: `pickup-${index}`,
+      };
+      await owner.mutation(api.game.transact, pickup);
+      await owner.mutation(api.game.transact, pickup);
+      await expect(
+        owner.mutation(api.game.transact, {
+          ...pickup,
+          destination: "cafe",
+          requestId: `swap-${index}`,
+        }),
+      ).rejects.toThrow("already");
+      const finish = {
+        worldId,
+        type: "finishJob" as const,
+        requestId: `finish-${index}`,
+      };
+      await expect(owner.mutation(api.game.transact, finish)).rejects.toThrow();
+      if (place.room)
+        await owner.mutation(api.game.enter, { worldId, room: place.room });
+      else {
+        const stop = stops.find((entry) => entry.id === place.stopId)!;
+        await owner.mutation(api.game.move, { worldId, x: stop.x, y: stop.y });
+      }
+      await owner.mutation(api.game.transact, finish);
+      await owner.mutation(api.game.transact, finish);
+      const saved = await owner.query(api.game.snapshot, { worldId });
+      expect(saved.character.balance).toBe(50 + 15 * (index + 1));
+      expect(saved.character.deliveries).toBe(index + 1);
+      expect(saved.character.deliveryTarget).toBeUndefined();
+    }
+  });
+  test("home deliveries use IDs and reject foreign homes or the wrong recipient", async () => {
+    const { owner, worldId, t } = await setup();
+    await t.mutation(internal.admin.addMember, {
+      worldId,
+      subject: "user_recipient",
+    });
+    const recipient = t.withIdentity({ subject: "user_recipient" });
+    const recipientId = (await recipient.query(api.game.snapshot, { worldId }))
+      .character.id;
+    const ownId = (await owner.query(api.game.snapshot, { worldId })).character
+      .id;
+    await owner.mutation(api.game.move, { worldId, x: 1110, y: 465 });
+    await expect(
+      owner.mutation(api.game.transact, {
+        worldId,
+        type: "startJob",
+        destination: "home:unknown",
+        requestId: "foreign",
+      }),
+    ).rejects.toThrow("Choose");
+    await owner.mutation(api.game.transact, {
+      worldId,
+      type: "startJob",
+      destination: `home:${recipientId}`,
+      requestId: "home-pickup",
+    });
+    await recipient.mutation(api.game.profile, {
+      worldId,
+      name: "New nickname",
+      color: "#8c95cc",
+    });
+    await owner.mutation(api.game.enter, { worldId, room: `home:${ownId}` });
+    const finish = {
+      worldId,
+      type: "finishJob" as const,
+      destination: `home:${ownId}`,
+      requestId: "home-finish",
+    };
+    await expect(owner.mutation(api.game.transact, finish)).rejects.toThrow(
+      "New nickname",
+    );
+    await owner.mutation(api.game.enter, {
+      worldId,
+      room: `home:${recipientId}`,
+    });
+    await owner.mutation(api.game.transact, finish);
+    expect(
+      (await owner.query(api.game.snapshot, { worldId })).character.balance,
+    ).toBe(65);
+  });
+  test("a café parcel saved before destination choices can still be delivered", async () => {
+    const { owner, worldId, t } = await setup();
+    const character = (await owner.query(api.game.snapshot, { worldId }))
+      .character;
+    await t.run(async (ctx) => {
+      await ctx.db.patch(character.id, { delivery: "carrying" });
+    });
+    await owner.mutation(api.game.move, { worldId, x: 332, y: 465 });
+    await owner.mutation(api.game.transact, {
+      worldId,
+      type: "finishJob",
+      requestId: "old-parcel",
+    });
+    expect(
+      (await owner.query(api.game.snapshot, { worldId })).character.balance,
+    ).toBe(65);
   });
   test("renaming preserves ownership, home, balance, and inventory", async () => {
     const { owner, worldId } = await setup();

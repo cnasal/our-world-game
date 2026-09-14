@@ -18,6 +18,7 @@ export default defineSchema({
     inventory: v.record(v.string(), v.number()),
     delivery: v.union(v.literal("none"), v.literal("carrying")),
     deliveries: v.number(),
+    deliveryTarget: v.optional(v.string()),
   })
     .index("by_world_subject", ["worldId", "subject"])
     .index("by_world", ["worldId"]),

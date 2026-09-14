@@ -9,6 +9,7 @@ export type Character = {
   y: number;
   inventory: Record<string, number>;
   delivery: "none" | "carrying";
+  deliveryTarget?: string;
   deliveries: number;
 };
 export type Neighbor = {
@@ -36,7 +37,7 @@ export type GameAction =
   | { type: "buy"; itemId: string; requestId: string }
   | { type: "use"; itemId: string; requestId: string }
   | { type: "eatFree"; itemId: string; requestId: string }
-  | { type: "startJob" }
+  | { type: "startJob"; destination?: string; requestId?: string }
   | { type: "finishJob"; requestId: string }
   | { type: "room"; room: string }
   | { type: "rest"; furnitureId: string | null };

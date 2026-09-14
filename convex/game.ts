@@ -1,3 +1,4 @@
+import { atDelivery, deliveryPlaces } from "../src/content/deliveries";
 import { hotel, hotelMeals, isHotelRoom } from "../src/content/hotel";
 import { furnitureFor } from "../src/content/furniture";
 import { v } from "convex/values";
@@ -77,6 +78,7 @@ export const snapshot = query({
         balance: c.balance,
         inventory: c.inventory,
         delivery: c.delivery,
+        deliveryTarget: c.deliveryTarget,
         deliveries: c.deliveries,
       },
       homes: homes.map((h) => ({ id: h._id, name: h.name, color: h.color })),
@@ -263,6 +265,7 @@ export const transact = mutation({
       v.literal("finishJob"),
     ),
     itemId: v.optional(v.string()),
+    destination: v.optional(v.string()),
     requestId: v.string(),
   },
   handler: async (ctx, args) => {
@@ -294,16 +297,39 @@ export const transact = mutation({
       near("post");
       if (c.delivery !== "none")
         throw new Error("You already have a delivery.");
-      await ctx.db.patch(c._id, { delivery: "carrying" });
-      label = "Picked up a café parcel";
+      const homes = await ctx.db
+        .query("characters")
+        .withIndex("by_world", (q) => q.eq("worldId", args.worldId))
+        .collect();
+      const destination = deliveryPlaces(
+        homes.map((home) => ({ id: home._id, name: home.name })),
+      ).find((place) => place.id === (args.destination ?? "cafe"));
+      if (!destination)
+        throw new Error("Choose a delivery place in this town.");
+      await ctx.db.patch(c._id, {
+        delivery: "carrying",
+        deliveryTarget: destination.id,
+      });
+      label = `Picked up a parcel for ${destination.name}`;
     } else if (args.type === "finishJob") {
-      near("cafe");
       if (c.delivery !== "carrying")
         throw new Error("Pick up a parcel at Little Post first.");
+      const homes = await ctx.db
+        .query("characters")
+        .withIndex("by_world", (q) => q.eq("worldId", args.worldId))
+        .collect();
+      const destination = deliveryPlaces(
+        homes.map((home) => ({ id: home._id, name: home.name })),
+      ).find((place) => place.id === (c.deliveryTarget ?? "cafe"));
+      if (!destination || !p || !atDelivery(destination, p))
+        throw new Error(
+          `Bring your parcel to ${destination?.name ?? "its destination"} first.`,
+        );
       amount = 15;
-      label = "Café delivery";
+      label = `Delivery to ${destination.name}`;
       await ctx.db.patch(c._id, {
         delivery: "none",
+        deliveryTarget: undefined,
         balance: c.balance + amount,
         deliveries: c.deliveries + 1,
       });

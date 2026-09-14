@@ -2138,3 +2138,22 @@ input {
   gap: 8px;
   padding: 10px 0;
 }
+
+#delivery-destination {
+  width: 100%;
+  max-width: 100%;
+  padding: 12px;
+  border: 1px solid #d8d9c7;
+  border-radius: 10px;
+  background: #fffdf4;
+  color: #465c45;
+  font: inherit;
+}
+
+.sidebar > .handoff {
+  flex-wrap: wrap;
+}
+.handoff > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

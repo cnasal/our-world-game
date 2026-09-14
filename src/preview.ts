@@ -1,3 +1,4 @@
+import { atDelivery, deliveryPlaces } from "./content/deliveries";
 import { hotel, hotelMeals } from "./content/hotel";
 import { furnitureFor } from "./content/furniture";
 import { useCallback, useRef, useState } from "react";
@@ -123,22 +124,37 @@ export function usePreview(): GameBridge {
           label = `Enjoyed ${meal.name} at the hotel`;
           break;
         }
-        case "startJob":
+        case "startJob": {
           near("post");
           if (c.delivery === "carrying")
             throw new Error("You already have a parcel.");
+          const destination = deliveryPlaces(s.homes).find(
+            (place) => place.id === (action.destination ?? "cafe"),
+          );
+          if (!destination)
+            throw new Error("Choose a delivery place in this town.");
           c.delivery = "carrying";
-          label = "Picked up a café parcel";
+          c.deliveryTarget = destination.id;
+          label = `Picked up a parcel for ${destination.name}`;
           break;
-        case "finishJob":
-          near("cafe");
+        }
+        case "finishJob": {
           if (c.delivery !== "carrying")
             throw new Error("Pick up a parcel first.");
+          const destination = deliveryPlaces(s.homes).find(
+            (place) => place.id === (c.deliveryTarget ?? "cafe"),
+          );
+          if (!destination || !atDelivery(destination, c))
+            throw new Error(
+              `Bring your parcel to ${destination?.name ?? "its destination"} first.`,
+            );
           c.delivery = "none";
+          delete c.deliveryTarget;
           c.deliveries++;
           amount = 15;
-          label = "Café delivery";
+          label = `Delivery to ${destination.name}`;
           break;
+        }
         case "buy":
         case "use": {
           const item = shopItems.find((i) => i.id === action.itemId);
@@ -161,7 +177,9 @@ export function usePreview(): GameBridge {
       c.balance += amount;
       if (label)
         s.receipts.unshift({
-          id: "requestId" in action ? action.requestId : crypto.randomUUID(),
+          id:
+            ("requestId" in action ? action.requestId : undefined) ??
+            crypto.randomUUID(),
           label,
           amount,
           at: Date.now(),
