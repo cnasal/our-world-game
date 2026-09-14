@@ -44,4 +44,20 @@ export const toys = [
     emoji: "⚽",
     color: "#f8efb9",
   },
+  {
+    id: "toy-stuffed-duck",
+    name: "Stuffed duck",
+    description: "A soft, fluffy friend with a happy little quack.",
+    price: 15,
+    emoji: "🦆",
+    color: "#f8efb9",
+  },
+  {
+    id: "toy-balloons",
+    name: "Set of balloons",
+    description: "A colorful bunch for a pretend party any day.",
+    price: 10,
+    emoji: "🎈",
+    color: "#f8d9e2",
+  },
 ] as const;
