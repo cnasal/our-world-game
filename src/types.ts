@@ -5,6 +5,7 @@ export type Character = {
   balance: number;
   room: string;
   restId?: string;
+  petId?: string;
   x: number;
   y: number;
   inventory: Record<string, number>;
@@ -18,6 +19,7 @@ export type Neighbor = {
   color: string;
   room: string;
   restId?: string;
+  petId?: string;
   x: number;
   y: number;
   updatedAt: number;
@@ -33,6 +35,7 @@ export type Snapshot = {
   receipts: Receipt[];
 };
 export type GameAction =
+  | { type: "adopt"; itemId: string; requestId: string }
   | { type: "profile"; name: string; color: string }
   | { type: "buy"; itemId: string; requestId: string }
   | { type: "use"; itemId: string; requestId: string }

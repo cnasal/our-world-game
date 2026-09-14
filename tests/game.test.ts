@@ -1,3 +1,4 @@
+import { pets } from "../src/content/pets";
 import { shopInteriors } from "../src/content/interiors";
 import { deliveryPlaces } from "../src/content/deliveries";
 import { stops } from "../src/content/town";
@@ -727,4 +728,86 @@ test("toys charge once, require ownership, and stay in the bag after playing", a
   expect(deliveryPlaces([]).find((place) => place.id === "toys")?.room).toBe(
     "shop:toys",
   );
+});
+
+test.each(pets)(
+  "adopting a $name costs 80 coins, stays out of the bag, and is shared",
+  async (pet) => {
+    const { t, owner, worldId } = await setup();
+    const adopt = {
+      worldId,
+      type: "adopt" as const,
+      itemId: pet.id,
+      requestId: "adopt-once",
+    };
+    await expect(owner.mutation(api.game.transact, adopt)).rejects.toThrow(
+      "Come inside",
+    );
+    await owner.mutation(api.game.enter, { worldId, room: "shop:shelter" });
+    await expect(owner.mutation(api.game.transact, adopt)).rejects.toThrow(
+      "coins",
+    );
+    const initial = await owner.query(api.game.snapshot, { worldId });
+    await t.run(async (ctx) => {
+      await ctx.db.patch(initial.character.id, { balance: 100 });
+    });
+    await expect(
+      t
+        .withIdentity({ subject: "stranger" })
+        .mutation(api.game.transact, adopt),
+    ).rejects.toThrow();
+    await expect(
+      owner.mutation(api.game.transact, { ...adopt, itemId: "invented-pet" }),
+    ).rejects.toThrow("Choose a pet");
+    await owner.mutation(api.game.transact, adopt);
+    await owner.mutation(api.game.transact, adopt);
+    const state = await owner.query(api.game.snapshot, { worldId });
+    expect(state.character.petId).toBe(pet.id);
+    expect(state.character.balance).toBe(20);
+    expect(state.character.inventory).toEqual(initial.character.inventory);
+    expect(
+      state.receipts.filter((r) => r.label === `Adopted ${pet.name}`),
+    ).toHaveLength(1);
+    await expect(
+      owner.mutation(api.game.transact, {
+        ...adopt,
+        requestId: "another-pet",
+        itemId: pets.find((p) => p.id !== pet.id)!.id,
+      }),
+    ).rejects.toThrow("already have a pet");
+    await owner.mutation(api.game.enter, { worldId, room: "school" });
+    const people = await owner.query(api.game.people, {
+      worldId,
+      room: "school",
+    });
+    expect(people.find((p) => p.id === state.character.id)?.petId).toBe(pet.id);
+    expect(
+      (await owner.query(api.game.snapshot, { worldId })).character.petId,
+    ).toBe(pet.id);
+  },
+);
+
+test("simultaneous adoption requests cannot buy two pets", async () => {
+  const { t, owner, worldId } = await setup();
+  await owner.mutation(api.game.enter, { worldId, room: "shop:shelter" });
+  const state = await owner.query(api.game.snapshot, { worldId });
+  await t.run(async (ctx) => {
+    await ctx.db.patch(state.character.id, { balance: 200 });
+  });
+  const results = await Promise.allSettled(
+    pets
+      .slice(0, 2)
+      .map((pet) =>
+        owner.mutation(api.game.transact, {
+          worldId,
+          type: "adopt",
+          itemId: pet.id,
+          requestId: pet.id,
+        }),
+      ),
+  );
+  expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+  const final = await owner.query(api.game.snapshot, { worldId });
+  expect(final.character.balance).toBe(120);
+  expect(final.character.inventory).toEqual({});
 });

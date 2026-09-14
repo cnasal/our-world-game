@@ -1,3 +1,4 @@
+import { petFor } from "./content/pets";
 import { shopFor } from "./content/interiors";
 import { atDelivery, deliveryPlaces } from "./content/deliveries";
 import { hotel, hotelMeals } from "./content/hotel";
@@ -85,6 +86,20 @@ export function usePreview(): GameBridge {
       )
         return;
       switch (action.type) {
+        case "adopt": {
+          if (c.room !== "shop:shelter")
+            throw new Error("Come inside the animal shelter to choose a pet.");
+          if (c.petId)
+            throw new Error("You already have a pet. One friend at a time!");
+          const pet = petFor(action.itemId);
+          if (!pet) throw new Error("Choose a pet from the shelter.");
+          if (c.balance < pet.price)
+            throw new Error("Try a delivery to earn a few more coins.");
+          c.petId = pet.id;
+          amount = -pet.price;
+          label = `Adopted ${pet.name}`;
+          break;
+        }
         case "profile":
           if (
             !action.name.trim() ||

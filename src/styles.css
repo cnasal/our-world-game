@@ -2188,3 +2188,18 @@ input {
   border-bottom: 1px solid #dfcfa9;
   font-size: 14px;
 }
+
+.pet-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #d9e2cc;
+  border-radius: 18px;
+  background: #f2f6eb;
+  color: #526346;
+}
+.pet-card p {
+  margin: 4px 0 0;
+  font-size: 13px;
+}

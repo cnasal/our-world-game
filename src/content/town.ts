@@ -1,3 +1,4 @@
+import { shelter } from "./pets";
 import { toyStore, toys } from "./toys";
 import { hotel } from "./hotel";
 import { school } from "./school";
@@ -115,6 +116,7 @@ export const avatarColors = [
 ];
 export const town = { width: 1800, height: 1040, spawn: { x: 720, y: 665 } };
 export const stops = [
+  { id: "shelter", name: shelter.name, x: 1610, y: 815 },
   { id: "toys", name: toyStore.name, x: 1360, y: 415 },
   { id: "cafe", name: "Cloud Café", x: 332, y: 465 },
   { id: "restaurant", name: restaurant.name, x: 705, y: 405 },

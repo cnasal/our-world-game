@@ -1,3 +1,4 @@
+import { shelter, pets, petFor } from "./content/pets";
 import { toyStore, toys } from "./content/toys";
 import { UpdateNotice } from "./UpdateNotice";
 import { shopFor, shopInteriors, shopCounter } from "./content/interiors";
@@ -412,6 +413,7 @@ type Panel =
   | "bag"
   | "bank"
   | "cafe"
+  | "shelter"
   | "toys"
   | "restaurant"
   | "library"
@@ -596,6 +598,7 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
     bag: "Your little collection",
     bank: "Your pocket of possibilities",
     cafe: "Something lovely to sip",
+    shelter: shelter.name,
     toys: toyStore.name,
     restaurant: restaurant.name,
     library: library.name,
@@ -605,6 +608,7 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
     neighbors: "A neighborhood of friends",
     help: "Make yourself at home",
   };
+  const companion = petFor(c.petId);
   const count = Object.values(c.inventory).reduce((sum, n) => sum + n, 0);
   const online = bridge.neighbors.filter(
     (n) => n.id !== c.id && Date.now() - n.updatedAt < 45000,
@@ -750,41 +754,43 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
                   className="interact-button"
                   onClick={() => interact(nearby)}
                 >
-                  {nearby === "toys"
-                    ? "Visit toy store"
-                    : nearby === "shop-counter"
-                      ? shop?.action
-                      : nearby === "stand"
-                        ? "Stand up"
-                        : nearby.startsWith("rest:")
-                          ? furnitureFor(c.room).find(
-                              (item) => item.id === nearby.slice(5),
-                            )?.pose === "lie"
-                            ? "Lie on bed"
-                            : "Sit down"
-                          : nearby.startsWith("lesson:")
-                            ? `Try ${schoolStations.find((entry) => entry.id === nearby)?.name ?? "a lesson"}`
-                            : nearby === "exit"
-                              ? exitName
-                              : nearby === "hotel"
-                                ? "Enter hotel"
-                                : nearby === "hotel-buffet"
-                                  ? "Free buffet"
-                                  : nearby.startsWith("door:")
-                                    ? `Enter ${hotelStops(c.room).find((entry) => entry.id === nearby)?.name ?? "room"}`
-                                    : nearby === "cafe"
-                                      ? "Visit café"
-                                      : nearby === "restaurant"
-                                        ? "Visit restaurant"
-                                        : nearby === "library"
-                                          ? "Visit library"
-                                          : nearby === "school"
-                                            ? "Visit school"
-                                            : nearby === "post"
-                                              ? "Pick up a job"
-                                              : nearby === "home"
-                                                ? "Go inside"
-                                                : "Visit a neighbor"}{" "}
+                  {nearby === "shelter"
+                    ? "Visit animal shelter"
+                    : nearby === "toys"
+                      ? "Visit toy store"
+                      : nearby === "shop-counter"
+                        ? shop?.action
+                        : nearby === "stand"
+                          ? "Stand up"
+                          : nearby.startsWith("rest:")
+                            ? furnitureFor(c.room).find(
+                                (item) => item.id === nearby.slice(5),
+                              )?.pose === "lie"
+                              ? "Lie on bed"
+                              : "Sit down"
+                            : nearby.startsWith("lesson:")
+                              ? `Try ${schoolStations.find((entry) => entry.id === nearby)?.name ?? "a lesson"}`
+                              : nearby === "exit"
+                                ? exitName
+                                : nearby === "hotel"
+                                  ? "Enter hotel"
+                                  : nearby === "hotel-buffet"
+                                    ? "Free buffet"
+                                    : nearby.startsWith("door:")
+                                      ? `Enter ${hotelStops(c.room).find((entry) => entry.id === nearby)?.name ?? "room"}`
+                                      : nearby === "cafe"
+                                        ? "Visit café"
+                                        : nearby === "restaurant"
+                                          ? "Visit restaurant"
+                                          : nearby === "library"
+                                            ? "Visit library"
+                                            : nearby === "school"
+                                              ? "Visit school"
+                                              : nearby === "post"
+                                                ? "Pick up a job"
+                                                : nearby === "home"
+                                                  ? "Go inside"
+                                                  : "Visit a neighbor"}{" "}
                   <span>E</span>
                 </button>
               )}
@@ -969,11 +975,27 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
             </button>
           </section>
           {canDeliver && !panel && c.room !== "town" && deliver}
+          {companion && (
+            <section className="pet-card" aria-label="Your pet">
+              <Heart size={20} />
+              <div>
+                <strong>{companion.name}</strong>
+                <p>Your friend is following you.</p>
+              </div>
+            </section>
+          )}
           <section className="places-card">
             <div className="section-title">
               <h2>Little places to go</h2>
               <MapPin size={17} />
             </div>
+            <Place
+              icon={<Heart size={20} />}
+              title={shelter.name}
+              subtitle="Meet your animal friend"
+              color="sage"
+              onClick={() => void go("shelter")}
+            />
             <Place
               icon={<Sparkles size={20} />}
               title={toyStore.name}
@@ -1105,6 +1127,62 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
             if (!busy) setPanel(null);
           }}
         >
+          {panel === "shelter" && (
+            <>
+              <p className="modal-intro">{shelter.welcome}</p>
+              {companion && (
+                <p role="status">
+                  {companion.name} is already your friend. You can have one pet
+                  at a time.
+                </p>
+              )}
+              {pets.length === 0 && (
+                <p>
+                  The shelter is getting ready for its first animal friends.
+                </p>
+              )}
+              <div className="shop-list">
+                {pets.map((pet) => (
+                  <div className="shop-item" key={pet.id}>
+                    <span
+                      className="drink-art"
+                      style={{ background: pet.color }}
+                    >
+                      {pet.emoji}
+                    </span>
+                    <div>
+                      <h3>{pet.name}</h3>
+                      <p>{pet.description}</p>
+                    </div>
+                    <button
+                      className="price-button"
+                      disabled={
+                        busy || Boolean(c.petId) || c.balance < pet.price
+                      }
+                      onClick={() =>
+                        void perform(
+                          {
+                            type: "adopt",
+                            itemId: pet.id,
+                            requestId: crypto.randomUUID(),
+                          },
+                          `${pet.name} is your new friend!`,
+                          true,
+                        )
+                      }
+                    >
+                      <Coins size={15} />
+                      {pet.price}
+                      <span>Adopt</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <p className="shop-balance">
+                You have {c.balance} coins to spend.
+              </p>
+            </>
+          )}
           {panel === "library" && <Library />}
           {panel === "school" && <School initialLessonId={schoolLesson} />}
           {panel === "profile" && (

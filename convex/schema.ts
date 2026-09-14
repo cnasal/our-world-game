@@ -16,6 +16,7 @@ export default defineSchema({
     color: v.string(),
     balance: v.number(),
     inventory: v.record(v.string(), v.number()),
+    petId: v.optional(v.string()),
     delivery: v.union(v.literal("none"), v.literal("carrying")),
     deliveries: v.number(),
     deliveryTarget: v.optional(v.string()),

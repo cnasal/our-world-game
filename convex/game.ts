@@ -1,3 +1,4 @@
+import { petFor } from "../src/content/pets";
 import { shopFor } from "../src/content/interiors";
 import { atDelivery, deliveryPlaces } from "../src/content/deliveries";
 import { hotel, hotelMeals, isHotelRoom } from "../src/content/hotel";
@@ -78,6 +79,7 @@ export const snapshot = query({
         color: c.color,
         balance: c.balance,
         inventory: c.inventory,
+        petId: c.petId,
         delivery: c.delivery,
         deliveryTarget: c.deliveryTarget,
         deliveries: c.deliveries,
@@ -109,6 +111,7 @@ export const people = query({
           id: c._id,
           name: c.name,
           color: c.color,
+          petId: c.petId,
           room: p.room,
           x: p.x,
           y: p.y,
@@ -264,6 +267,7 @@ export const transact = mutation({
   args: {
     worldId: v.id("worlds"),
     type: v.union(
+      v.literal("adopt"),
       v.literal("eatFree"),
       v.literal("buy"),
       v.literal("use"),
@@ -300,7 +304,19 @@ export const transact = mutation({
     }
     let label = "",
       amount = 0;
-    if (args.type === "startJob") {
+    if (args.type === "adopt") {
+      if (p?.room !== "shop:shelter")
+        throw new Error("Come inside the animal shelter to choose a pet.");
+      if (c.petId)
+        throw new Error("You already have a pet. One friend at a time!");
+      const pet = petFor(args.itemId);
+      if (!pet) throw new Error("Choose a pet from the shelter.");
+      if (c.balance < pet.price)
+        throw new Error("You need a few more coins. Try a delivery!");
+      amount = -pet.price;
+      label = `Adopted ${pet.name}`;
+      await ctx.db.patch(c._id, { petId: pet.id, balance: c.balance + amount });
+    } else if (args.type === "startJob") {
       near("post");
       if (c.delivery !== "none")
         throw new Error("You already have a delivery.");

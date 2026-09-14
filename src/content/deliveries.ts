@@ -14,9 +14,15 @@ export function deliveryPlaces(
   return [
     ...stops
       .filter((stop) =>
-        ["toys", "cafe", "restaurant", "library", "school", "hotel"].includes(
-          stop.id,
-        ),
+        [
+          "shelter",
+          "toys",
+          "cafe",
+          "restaurant",
+          "library",
+          "school",
+          "hotel",
+        ].includes(stop.id),
       )
       .map((stop) => ({
         id: stop.id,

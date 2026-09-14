@@ -1,3 +1,5 @@
+import { shelter, petFor } from "../content/pets";
+import { PetFollower } from "./PetFollower";
 import { toyStore } from "../content/toys";
 import { shopFor, shopCounter } from "../content/interiors";
 import {
@@ -26,6 +28,7 @@ export class TownScene extends Phaser.Scene {
     string,
     { view: Phaser.GameObjects.Container; target: Neighbor; stamp: number }
   >();
+  private pets = new Map<string, PetFollower>();
   private obstacles: Rect[] = [];
   private path: { x: number; y: number }[] = [];
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
@@ -157,6 +160,7 @@ export class TownScene extends Phaser.Scene {
     if (this.room !== snapshot.character.room) {
       this.children.removeAll(true);
       this.others.clear();
+      this.pets.clear();
       this.bubble = undefined;
       this.path = [];
       this.arrival = undefined;
@@ -426,6 +430,7 @@ export class TownScene extends Phaser.Scene {
         this.others.delete(item.target.id);
       }
     }
+    this.updatePets(delta);
     if (this.bubble) {
       this.bubble.setPosition(this.avatar.x, this.avatar.y - 95);
       if (time > this.bubbleUntil) {
@@ -433,6 +438,52 @@ export class TownScene extends Phaser.Scene {
         this.bubble = undefined;
       }
     }
+  }
+  private updatePets(delta: number) {
+    const owners = [
+      {
+        id: this.current!.character.id,
+        petId: this.current!.character.petId,
+        view: this.avatar,
+        resting: Boolean(this.current!.character.restId),
+      },
+      ...Array.from(this.others.values(), (item) => ({
+        id: item.target.id,
+        petId: item.target.petId,
+        view: item.view,
+        resting: Boolean(item.target.restId),
+      })),
+    ];
+    const active = new Set<string>();
+    for (const owner of owners) {
+      const pet = petFor(owner.petId);
+      if (!pet) continue;
+      active.add(owner.id);
+      let follower = this.pets.get(owner.id);
+      if (!follower || follower.petId !== pet.id) {
+        follower?.destroy();
+        follower = new PetFollower(this, pet, owner.view.x, owner.view.y);
+        const beside = [
+          { x: owner.view.x - 45, y: owner.view.y + 20 },
+          { x: owner.view.x + 45, y: owner.view.y + 20 },
+          { x: owner.view.x, y: owner.view.y + 45 },
+        ].find((point) => this.walkable(point.x, point.y));
+        if (beside) follower.view.setPosition(beside.x, beside.y);
+        this.pets.set(owner.id, follower);
+      }
+      follower.follow(
+        owner.view.x,
+        owner.view.y,
+        delta,
+        owner.resting,
+        (x, y) => this.walkable(x, y),
+      );
+    }
+    for (const [id, follower] of this.pets)
+      if (!active.has(id)) {
+        follower.destroy();
+        this.pets.delete(id);
+      }
   }
   private walkable(x: number, y: number) {
     if (this.room !== "town")
@@ -766,7 +817,18 @@ export class TownScene extends Phaser.Scene {
     );
     this.text(1360, 295, "TOYS", 18, "#655783");
     this.tree(1765, 210, 0.9);
-    this.tree(1620, 770, 1.3);
+    this.rect(1275, 790, 370, 86, 0xe8d9b6, 20);
+    this.building(
+      1510,
+      630,
+      200,
+      127,
+      0x87a17b,
+      0xf6edd9,
+      shelter.name,
+      "shelter",
+    );
+    this.text(1610, 694, "ANIMAL SHELTER", 13, "#526346");
     // Café terrace.
     const terrace = this.add.graphics();
     terrace.fillStyle(0xd7c9a5).fillRoundedRect(108, 398, 100, 74, 14);
@@ -850,6 +912,15 @@ export class TownScene extends Phaser.Scene {
             );
       }
       this.text(720, 372, "Stories for everyone", 19, "#fff9e7");
+    } else if (shop.id === "shelter") {
+      for (const x of [435, 965]) {
+        this.rect(x - 55, 465, 110, 64, 0x98b18b, 22);
+        this.rect(x - 43, 471, 86, 46, 0xe7eedb, 18);
+        const bowl = this.add.graphics();
+        bowl.fillStyle(0x87b5c3).fillEllipse(x, 565, 45, 22);
+        bowl.fillStyle(0xcbe6e8).fillEllipse(x, 561, 33, 12);
+      }
+      this.text(720, 372, "A friend for your adventures", 18, "#fff9e7");
     } else if (shop.id === "toys") {
       for (const x of [390, 960]) {
         this.rect(x, 235, 90, 140, 0xa08063, 6);

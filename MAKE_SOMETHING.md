@@ -93,3 +93,18 @@ Purchased toys stay in the bag when **Play** is clicked; food and drinks still g
 used up. Keep toy IDs stable to preserve saved collections. Run
 `node scripts/toy-check.mjs` against the development preview to check the toy-store
 walkthrough (default port 5176, or set `GAME_TEST_URL`).
+
+### Animal shelter and companions
+
+`src/content/pets.ts` contains the shelter's pets and adoption prices. Cats, dogs,
+and ducks each cost 80 coins. Keep pet IDs stable, just like item IDs.
+A character's optional `petId` stores their one companion separately from the
+backpack. Adoption checks membership, shelter entry, coins, and existing pet
+ownership in one server transaction, with the usual retry receipt.
+`src/game/PetFollower.ts` draws companions and follows the owner's recent footsteps;
+companions travel between rooms and wait while their owners sit or lie down.
+The shared room subscription includes pets so other players can see them.
+The shelter also has seats and accepts package deliveries.
+Run `node scripts/pet-check.mjs` against the development preview to check adoption,
+following, saved ownership, room changes, shared pets, and phone layout. Its test
+coins are kept only in the browser's isolated preview save.
