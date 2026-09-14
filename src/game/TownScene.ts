@@ -1,3 +1,5 @@
+import { itemArt } from "./itemArt";
+import { homeItemSpots } from "../content/homeItems";
 import { bank } from "../content/bank";
 import { defaultHomeStyle } from "../content/homes";
 import { iceCreamShop } from "../content/iceCream";
@@ -16,7 +18,7 @@ import { furnitureFor } from "../content/furniture";
 import { school, schoolStations } from "../content/school";
 import { library } from "../content/library";
 import Phaser from "phaser";
-import { restaurant, stops, town } from "../content/town";
+import { restaurant, stops, town, shopItems } from "../content/town";
 import type { Neighbor, Snapshot } from "../types";
 type Rect = { x: number; y: number; w: number; h: number };
 type Callbacks = {
@@ -35,6 +37,8 @@ export class TownScene extends Phaser.Scene {
   private homeWalls?: Phaser.GameObjects.Graphics;
   private homeFloor?: Phaser.GameObjects.Graphics;
   private homePaint = "";
+  private homeItemViews: Phaser.GameObjects.Container[] = [];
+  private homeItemStamp = "";
   private obstacles: Rect[] = [];
   private path: { x: number; y: number }[] = [];
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
@@ -67,6 +71,20 @@ export class TownScene extends Phaser.Scene {
         return;
       }
       const p = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+      if (
+        this.room === `home:${this.current?.character.id}` &&
+        homeItemSpots.some(
+          (spot) =>
+            Math.abs(p.x - spot.x) < 35 &&
+            Math.abs(p.y - spot.y) < 45 &&
+            this.current?.homes.find(
+              (home) => home.id === this.current?.character.id,
+            )?.homeItems?.[spot.id],
+        )
+      ) {
+        this.callbacks.interact("home-items");
+        return;
+      }
       const furniture = furnitureFor(this.room).find(
         ({ hit }) =>
           p.x >= hit.x &&
@@ -168,6 +186,8 @@ export class TownScene extends Phaser.Scene {
       this.homeWalls = undefined;
       this.homeFloor = undefined;
       this.homePaint = "";
+      this.homeItemViews = [];
+      this.homeItemStamp = "";
       this.others.clear();
       this.pets.clear();
       this.bubble = undefined;
@@ -235,6 +255,38 @@ export class TownScene extends Phaser.Scene {
           )
           .fillRect(335, 380, 770, 465);
         this.homePaint = paint;
+      }
+    }
+    if (this.room.startsWith("home:")) {
+      const placed =
+        snapshot.homes.find((home) => `home:${home.id}` === this.room)
+          ?.homeItems ?? {};
+      const stamp = JSON.stringify(placed);
+      if (stamp !== this.homeItemStamp) {
+        this.homeItemViews.forEach((view) => view.destroy());
+        this.homeItemViews = [];
+        for (const spot of homeItemSpots) {
+          const item = shopItems.find((entry) => entry.id === placed[spot.id]);
+          if (!item) continue;
+          const icon = itemArt(this, item.id, item.shop);
+          const label = this.add
+            .text(0, 10, item.name, {
+              fontFamily: "Trebuchet MS",
+              fontSize: "11px",
+              color: "#4b5544",
+              backgroundColor: "#fff9e8",
+              wordWrap: { width: 80 },
+              align: "center",
+            })
+            .setOrigin(0.5, 0);
+          this.homeItemViews.push(
+            this.add
+              .container(spot.x, spot.y, [icon, label])
+              .setDepth(2)
+              .setName(`unpacked:${spot.id}`),
+          );
+        }
+        this.homeItemStamp = stamp;
       }
     }
     this.poseAvatar(this.avatar, snapshot.character.restId);
@@ -1171,6 +1223,7 @@ export class TownScene extends Phaser.Scene {
     this.rect(295, 185, 860, 710, 0x80916e, 25);
     this.rect(315, 170, 810, 700, 0xf8ecd4, 18);
     this.homeWalls = this.rect(335, 200, 770, 180, 0xd9dfc3, 8);
+    if (guestColor === undefined) this.rect(570, 335, 200, 10, 0xae8d66, 3);
     this.homeFloor = this.rect(335, 380, 770, 465, 0xdfbd96);
     const g = this.add.graphics();
     g.lineStyle(2, 0xc9a880, 0.6);

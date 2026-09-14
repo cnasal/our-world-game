@@ -1,3 +1,4 @@
+import { homeItemSpots } from "./content/homeItems";
 import { bank } from "./content/bank";
 import { defaultHomeStyle, wallColors, floorColors } from "./content/homes";
 import { iceCreamShop, iceCreams } from "./content/iceCream";
@@ -351,6 +352,7 @@ function LiveWorld({ worldId }: { worldId: GenericId<"worlds"> }) {
             worldId,
             type: action.type,
             coins: "coins" in action ? action.coins : undefined,
+            spotId: "spotId" in action ? action.spotId : undefined,
             itemId: "itemId" in action ? action.itemId : undefined,
             destination:
               action.type === "startJob" ? action.destination : undefined,
@@ -421,6 +423,7 @@ function LiveWorld({ worldId }: { worldId: GenericId<"worlds"> }) {
 }
 
 type Panel =
+  | "homeItems"
   | "decorate"
   | "profile"
   | "bag"
@@ -484,6 +487,11 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
       setBusy(false);
     }
   };
+  const [unpackSpot, setUnpackSpot] = useState("");
+  const placedItems = homes.find((home) => home.id === c.id)?.homeItems ?? {};
+  const freeSpots = homeItemSpots.filter((spot) => !placedItems[spot.id]);
+  const selectedSpot =
+    freeSpots.find((spot) => spot.id === unpackSpot)?.id ?? freeSpots[0]?.id;
   const [bankAmount, setBankAmount] = useState("10");
   const coinsToMove = Number(bankAmount);
   const validCoins = Number.isSafeInteger(coinsToMove) && coinsToMove > 0;
@@ -500,7 +508,8 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
     setPanel(value);
   };
   const interact = (id: string) => {
-    if (id === "stand") void perform({ type: "rest", furnitureId: null });
+    if (id === "home-items") open("homeItems");
+    else if (id === "stand") void perform({ type: "rest", furnitureId: null });
     else if (id.startsWith("rest:"))
       void perform({ type: "rest", furnitureId: id.slice(5) });
     else if (id === "shop-counter" && shopFor(c.room))
@@ -616,6 +625,7 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
     else if (parcel?.room) void perform({ type: "room", room: parcel.room });
   };
   const title = {
+    homeItems: "Things in your home",
     decorate: "Make your home your own",
     profile: "A little more you",
     bag: "Your little collection",
@@ -845,6 +855,9 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
             <nav className="school-desks" aria-label="Your home">
               <button className="secondary" onClick={() => open("decorate")}>
                 <Home size={17} /> Decorate my home
+              </button>
+              <button className="secondary" onClick={() => open("homeItems")}>
+                Things in my home
               </button>
             </nav>
           )}
@@ -1522,8 +1535,117 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
               </p>
             </>
           )}
+          {panel === "homeItems" && (
+            <>
+              <p className="modal-intro">
+                Your unpacked things stay here. Play with a toy, or put
+                something back in your backpack.
+              </p>
+              {Object.keys(placedItems).length === 0 && (
+                <p>
+                  Nothing unpacked yet. Open your backpack to choose something!
+                </p>
+              )}
+              {homeItemSpots.map((spot) => {
+                const item = shopItems.find(
+                  (entry) => entry.id === placedItems[spot.id],
+                );
+                return item ? (
+                  <div className="shop-item" key={spot.id}>
+                    <span
+                      className="drink-art"
+                      style={{ background: item.color }}
+                    >
+                      {item.emoji}
+                    </span>
+                    <div>
+                      <h3>{item.name}</h3>
+                      <p>{spot.name}</p>
+                    </div>
+                    <div className="home-item-actions">
+                      {item.shop === "toys" && (
+                        <button
+                          className="secondary"
+                          disabled={busy}
+                          onClick={() => {
+                            void perform(
+                              {
+                                type: "playHome",
+                                spotId: spot.id,
+                                requestId: crypto.randomUUID(),
+                              },
+                              `You played with your ${item.name.toLowerCase()}!`,
+                              true,
+                            );
+                            scene.current?.wave("✨");
+                          }}
+                        >
+                          Play
+                        </button>
+                      )}
+                      <button
+                        className="secondary"
+                        disabled={busy}
+                        onClick={() =>
+                          void perform(
+                            {
+                              type: "pack",
+                              spotId: spot.id,
+                              requestId: crypto.randomUUID(),
+                            },
+                            `${item.name} is back in your backpack!`,
+                          )
+                        }
+                      >
+                        Put back in backpack
+                      </button>
+                    </div>
+                  </div>
+                ) : null;
+              })}
+              <button className="secondary" onClick={() => open("bag")}>
+                Open my backpack
+              </button>
+            </>
+          )}
           {panel === "bag" && (
             <>
+              {count > 0 &&
+                (c.room === `home:${c.id}` ? (
+                  <div className="unpack-choice">
+                    <label className="field-label" htmlFor="unpack-spot">
+                      Unpack onto…
+                    </label>
+                    {freeSpots.length ? (
+                      <select
+                        id="unpack-spot"
+                        value={selectedSpot}
+                        onChange={(event) => setUnpackSpot(event.target.value)}
+                      >
+                        {freeSpots.map((spot) => (
+                          <option value={spot.id} key={spot.id}>
+                            {spot.name}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <p>
+                        Your spots are full. Put something back in your backpack
+                        to make room.
+                      </p>
+                    )}
+                    <button
+                      className="secondary"
+                      onClick={() => open("homeItems")}
+                    >
+                      Things in my home
+                    </button>
+                  </div>
+                ) : (
+                  <p>
+                    Visit your own home to unpack items and leave them there.
+                  </p>
+                ))}
               {count === 0 ? (
                 <div className="empty-state">
                   <Backpack size={45} />
@@ -1580,6 +1702,26 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
                       >
                         {item.shop === "toys" ? "Play" : "Enjoy"}
                       </button>
+                      {c.room === `home:${c.id}` && (
+                        <button
+                          className="secondary"
+                          disabled={busy || !selectedSpot}
+                          onClick={() =>
+                            void perform(
+                              {
+                                type: "unpack",
+                                itemId: item.id,
+                                spotId: selectedSpot!,
+                                requestId: crypto.randomUUID(),
+                              },
+                              `${item.name} is unpacked in your home!`,
+                              true,
+                            )
+                          }
+                        >
+                          Unpack
+                        </button>
+                      )}
                     </div>
                   ))
               )}

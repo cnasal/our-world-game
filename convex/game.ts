@@ -1,3 +1,4 @@
+import { moveHomeItem } from "../src/content/homeItems";
 import { transferCoins } from "../src/content/bank";
 import { validHomeStyle } from "../src/content/homes";
 import { petFor } from "../src/content/pets";
@@ -92,6 +93,7 @@ export const snapshot = query({
         name: h.name,
         color: h.color,
         homeStyle: h.homeStyle,
+        homeItems: h.homeItems,
       })),
       receipts: receipts.map((r) => ({
         id: r._id,
@@ -289,6 +291,9 @@ export const transact = mutation({
   args: {
     worldId: v.id("worlds"),
     type: v.union(
+      v.literal("unpack"),
+      v.literal("pack"),
+      v.literal("playHome"),
       v.literal("deposit"),
       v.literal("withdraw"),
       v.literal("adopt"),
@@ -298,6 +303,7 @@ export const transact = mutation({
       v.literal("startJob"),
       v.literal("finishJob"),
     ),
+    spotId: v.optional(v.string()),
     coins: v.optional(v.number()),
     itemId: v.optional(v.string()),
     destination: v.optional(v.string()),
@@ -329,7 +335,28 @@ export const transact = mutation({
     }
     let label = "",
       amount = 0;
-    if (args.type === "deposit" || args.type === "withdraw") {
+    if (
+      args.type === "unpack" ||
+      args.type === "pack" ||
+      args.type === "playHome"
+    ) {
+      if (p?.room !== `home:${c._id}`)
+        throw new Error(
+          "Visit your own home to unpack, pack, or play with your things.",
+        );
+      const next = moveHomeItem(
+        c.inventory,
+        c.homeItems ?? {},
+        args.type,
+        args.spotId ?? "",
+        args.itemId,
+      );
+      label = next.label;
+      await ctx.db.patch(c._id, {
+        inventory: next.inventory,
+        homeItems: next.homeItems,
+      });
+    } else if (args.type === "deposit" || args.type === "withdraw") {
       if (p?.room !== "shop:bank")
         throw new Error("Come inside the bank to move your coins.");
       const next = transferCoins(

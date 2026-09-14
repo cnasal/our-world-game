@@ -2262,3 +2262,22 @@ input {
   gap: 10px;
   margin: 16px 0;
 }
+
+.home-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.unpack-choice {
+  margin-bottom: 20px;
+}
+.unpack-choice select {
+  display: block;
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 10px;
+  border: 1px solid #d6d8ca;
+  border-radius: 10px;
+  background: #fffdf7;
+  color: #4b5544;
+}

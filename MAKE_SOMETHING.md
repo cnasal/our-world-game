@@ -139,3 +139,15 @@ verify world membership and bank entry, update both balances atomically, and
 preserve the existing retry receipts. Players can see their balances from the
 pocket button anywhere, but must visit the bank to move coins.
 Run `node scripts/bank-check.mjs` against the development preview for the bank walkthrough.
+
+### Unpacking at home
+
+In your own home, open the backpack, choose one of six shelf/table/rug spots,
+and click **Unpack**. Items leave the bag and stay visibly in the house for
+visitors to see. Click a placed item or **Things in my home** to **Play** with any
+toy without repacking it, or **Put back in backpack**. Food can be packed back
+and enjoyed from the bag. Pets and delivery parcels are separate from this system.
+`src/content/homeItems.ts` defines spots and shared transfer validation. The
+server checks home ownership and changes the bag and placed items atomically,
+using retry receipts to prevent duplicates. Existing homes start with no placed
+items. Run `node scripts/unpack-check.mjs` against the isolated development preview.

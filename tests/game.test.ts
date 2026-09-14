@@ -968,3 +968,91 @@ test("simultaneous bank deposits cannot spend the same pocket coins twice", asyn
   expect(character.balance).toBe(10);
   expect(character.savings).toBe(40);
 });
+
+test("unpacking, playing, and packing preserve ownership and item counts", async () => {
+  const { t, owner, worldId } = await setup();
+  await owner.mutation(api.game.enter, { worldId, room: "shop:toys" });
+  await owner.mutation(api.game.transact, {
+    worldId,
+    type: "buy",
+    itemId: "toy-teddy",
+    requestId: "buy-unpack",
+  });
+  const before = await owner.query(api.game.snapshot, { worldId });
+  const unpack = {
+    worldId,
+    type: "unpack" as const,
+    itemId: "toy-teddy",
+    spotId: "shelf-left",
+    requestId: "unpack-one",
+  };
+  await expect(owner.mutation(api.game.transact, unpack)).rejects.toThrow(
+    "own home",
+  );
+  await owner.mutation(api.game.enter, {
+    worldId,
+    room: `home:${before.character.id}`,
+  });
+  await expect(
+    owner.mutation(api.game.transact, { ...unpack, spotId: "made-up" }),
+  ).rejects.toThrow();
+  await owner.mutation(api.game.transact, unpack);
+  await owner.mutation(api.game.transact, unpack);
+  await expect(
+    owner.mutation(api.game.transact, { ...unpack, requestId: "full-spot" }),
+  ).rejects.toThrow();
+  await expect(
+    owner.mutation(api.game.transact, {
+      ...unpack,
+      spotId: "shelf-right",
+      requestId: "no-more",
+    }),
+  ).rejects.toThrow();
+  for (const requestId of ["play-one", "play-one", "play-two"])
+    await owner.mutation(api.game.transact, {
+      worldId,
+      type: "playHome",
+      spotId: "shelf-left",
+      requestId,
+    });
+  await t.mutation(internal.admin.addMember, {
+    worldId,
+    subject: "user_unpack_visitor",
+  });
+  const visitor = t.withIdentity({ subject: "user_unpack_visitor" });
+  await visitor.mutation(api.game.enter, {
+    worldId,
+    room: `home:${before.character.id}`,
+  });
+  expect(
+    (await visitor.query(api.game.snapshot, { worldId })).homes.find(
+      (home) => home.id === before.character.id,
+    )?.homeItems,
+  ).toEqual({ "shelf-left": "toy-teddy" });
+  await expect(
+    visitor.mutation(api.game.transact, {
+      ...unpack,
+      type: "pack",
+      requestId: "steal",
+    }),
+  ).rejects.toThrow();
+  await expect(
+    t
+      .withIdentity({ subject: "user_outsider" })
+      .mutation(api.game.transact, unpack),
+  ).rejects.toThrow();
+  const pack = {
+    worldId,
+    type: "pack" as const,
+    spotId: "shelf-left",
+    requestId: "pack-one",
+  };
+  await owner.mutation(api.game.transact, pack);
+  await owner.mutation(api.game.transact, pack);
+  const after = await owner.query(api.game.snapshot, { worldId });
+  expect(after.character.inventory["toy-teddy"]).toBe(1);
+  expect(after.character.balance).toBe(before.character.balance);
+  expect(
+    after.homes.find((home) => home.id === before.character.id)?.homeItems,
+  ).toEqual({});
+});

@@ -1,3 +1,4 @@
+import { moveHomeItem } from "./content/homeItems";
 import { transferCoins } from "./content/bank";
 import { validHomeStyle } from "./content/homes";
 import { petFor } from "./content/pets";
@@ -88,6 +89,26 @@ export function usePreview(): GameBridge {
       )
         return;
       switch (action.type) {
+        case "unpack":
+        case "pack":
+        case "playHome": {
+          if (c.room !== `home:${c.id}`)
+            throw new Error(
+              "Visit your own home to unpack, pack, or play with your things.",
+            );
+          const ownHome = s.homes.find((home) => home.id === c.id)!;
+          const next = moveHomeItem(
+            c.inventory,
+            ownHome.homeItems ?? {},
+            action.type,
+            action.spotId,
+            action.itemId,
+          );
+          c.inventory = next.inventory;
+          ownHome.homeItems = next.homeItems;
+          label = next.label;
+          break;
+        }
         case "deposit":
         case "withdraw": {
           if (c.room !== "shop:bank")

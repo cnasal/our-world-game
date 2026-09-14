@@ -33,10 +33,22 @@ export type Snapshot = {
   worldId: string;
   worldName: string;
   character: Character;
-  homes: { id: string; name: string; color: string; homeStyle?: HomeStyle }[];
+  homes: {
+    id: string;
+    name: string;
+    color: string;
+    homeItems?: Record<string, string>;
+    homeStyle?: HomeStyle;
+  }[];
   receipts: Receipt[];
 };
 export type GameAction =
+  | {
+      type: "unpack" | "pack" | "playHome";
+      spotId: string;
+      itemId?: string;
+      requestId: string;
+    }
   | { type: "deposit" | "withdraw"; coins: number; requestId: string }
   | ({ type: "decorate" } & HomeStyle)
   | { type: "adopt"; itemId: string; requestId: string }
