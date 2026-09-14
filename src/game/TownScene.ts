@@ -1,3 +1,4 @@
+import { defaultHomeStyle } from "../content/homes";
 import { iceCreamShop } from "../content/iceCream";
 import { shelter, petFor } from "../content/pets";
 import { PetFollower } from "./PetFollower";
@@ -30,6 +31,9 @@ export class TownScene extends Phaser.Scene {
     { view: Phaser.GameObjects.Container; target: Neighbor; stamp: number }
   >();
   private pets = new Map<string, PetFollower>();
+  private homeWalls?: Phaser.GameObjects.Graphics;
+  private homeFloor?: Phaser.GameObjects.Graphics;
+  private homePaint = "";
   private obstacles: Rect[] = [];
   private path: { x: number; y: number }[] = [];
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
@@ -160,6 +164,9 @@ export class TownScene extends Phaser.Scene {
     if (!this.created) return;
     if (this.room !== snapshot.character.room) {
       this.children.removeAll(true);
+      this.homeWalls = undefined;
+      this.homeFloor = undefined;
+      this.homePaint = "";
       this.others.clear();
       this.pets.clear();
       this.bubble = undefined;
@@ -207,6 +214,27 @@ export class TownScene extends Phaser.Scene {
       this.path = [];
       this.arrival = undefined;
       this.avatar.setPosition(snapshot.character.x, snapshot.character.y);
+    }
+    if (this.room.startsWith("home:") && this.homeWalls && this.homeFloor) {
+      const style =
+        snapshot.homes.find((home) => `home:${home.id}` === this.room)
+          ?.homeStyle ?? defaultHomeStyle;
+      const paint = `${style.wallColor}:${style.floorColor}`;
+      if (paint !== this.homePaint) {
+        this.homeWalls
+          .clear()
+          .fillStyle(
+            Phaser.Display.Color.HexStringToColor(style.wallColor).color,
+          )
+          .fillRoundedRect(335, 200, 770, 180, 8);
+        this.homeFloor
+          .clear()
+          .fillStyle(
+            Phaser.Display.Color.HexStringToColor(style.floorColor).color,
+          )
+          .fillRect(335, 380, 770, 465);
+        this.homePaint = paint;
+      }
     }
     this.poseAvatar(this.avatar, snapshot.character.restId);
     const active = neighbors.filter(
@@ -1125,8 +1153,8 @@ export class TownScene extends Phaser.Scene {
     this.rect(0, 0, 1440, 1040, 0xb7c9a2);
     this.rect(295, 185, 860, 710, 0x80916e, 25);
     this.rect(315, 170, 810, 700, 0xf8ecd4, 18);
-    this.rect(335, 200, 770, 180, 0xd9dfc3, 8);
-    this.rect(335, 380, 770, 465, 0xdfbd96);
+    this.homeWalls = this.rect(335, 200, 770, 180, 0xd9dfc3, 8);
+    this.homeFloor = this.rect(335, 380, 770, 465, 0xdfbd96);
     const g = this.add.graphics();
     g.lineStyle(2, 0xc9a880, 0.6);
     for (let y = 410; y < 845; y += 38) g.lineBetween(335, y, 1105, y);

@@ -1,3 +1,4 @@
+import type { HomeStyle } from "./content/homes";
 export type Character = {
   id: string;
   name: string;
@@ -31,10 +32,11 @@ export type Snapshot = {
   worldId: string;
   worldName: string;
   character: Character;
-  homes: { id: string; name: string; color: string }[];
+  homes: { id: string; name: string; color: string; homeStyle?: HomeStyle }[];
   receipts: Receipt[];
 };
 export type GameAction =
+  | ({ type: "decorate" } & HomeStyle)
   | { type: "adopt"; itemId: string; requestId: string }
   | { type: "profile"; name: string; color: string }
   | { type: "buy"; itemId: string; requestId: string }

@@ -1,3 +1,4 @@
+import { validHomeStyle } from "../src/content/homes";
 import { petFor } from "../src/content/pets";
 import { shopFor } from "../src/content/interiors";
 import { atDelivery, deliveryPlaces } from "../src/content/deliveries";
@@ -84,7 +85,12 @@ export const snapshot = query({
         deliveryTarget: c.deliveryTarget,
         deliveries: c.deliveries,
       },
-      homes: homes.map((h) => ({ id: h._id, name: h.name, color: h.color })),
+      homes: homes.map((h) => ({
+        id: h._id,
+        name: h.name,
+        color: h.color,
+        homeStyle: h.homeStyle,
+      })),
       receipts: receipts.map((r) => ({
         id: r._id,
         label: r.label,
@@ -247,6 +253,20 @@ export const emote = mutation({
         emoteAt: Date.now(),
         updatedAt: Date.now(),
       });
+  },
+});
+export const decorate = mutation({
+  args: {
+    worldId: v.id("worlds"),
+    wallColor: v.string(),
+    floorColor: v.string(),
+  },
+  handler: async (ctx, { worldId, wallColor, floorColor }) => {
+    const c = await member(ctx, worldId);
+    const homeStyle = { wallColor, floorColor };
+    if (!validHomeStyle(homeStyle))
+      throw new Error("Choose colors from the home palette.");
+    await ctx.db.patch(c._id, { homeStyle });
   },
 });
 export const profile = mutation({

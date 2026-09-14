@@ -116,3 +116,14 @@ Each scoop costs 5 coins and goes into the bag until enjoyed. The shop is just
 past the hotel and supports walking inside, seats, companions, and deliveries.
 Keep flavor IDs stable so saved ice creams still work. Run
 `node scripts/ice-cream-check.mjs` against the development preview for its walkthrough.
+
+### Home colors
+
+At home, choose **Decorate my home** to preview and save wall and floor colors
+for free. `src/content/homes.ts` holds the available colors and original defaults.
+Saved colors belong to the character's ID, so changing a nickname keeps the decor.
+Only the owner's home can be changed; visitors see the saved colors. Painting
+updates the room without moving people, pets, or furniture. Existing homes keep
+their original look until decorated. Use `node scripts/home-colors-check.mjs`
+against the development preview to check saving, canceling, restoring defaults,
+resting during painting, visitor isolation, and phone layout.

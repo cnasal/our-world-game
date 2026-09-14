@@ -2203,3 +2203,50 @@ input {
   margin: 4px 0 0;
   font-size: 13px;
 }
+
+.home-color-preview {
+  overflow: hidden;
+  border-radius: 14px;
+  margin-bottom: 20px;
+}
+.home-color-preview > div {
+  padding: 16px;
+  text-align: center;
+  color: #403b32;
+  font-weight: 600;
+}
+.home-palette {
+  border: 0;
+  padding: 0;
+  margin: 18px 0;
+}
+.home-palette legend {
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.home-palette > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.home-palette button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #d6d8ca;
+  border-radius: 12px;
+  background: #fffdf7;
+  padding: 8px;
+  color: #4b5544;
+}
+.home-palette button[aria-pressed="true"] {
+  outline: 2px solid #587047;
+}
+.home-palette button > span {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #403b32;
+}

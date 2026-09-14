@@ -844,3 +844,46 @@ test("ice cream purchases require the right shop and can be enjoyed only once", 
   expect(state.character.inventory[item.id]).toBe(0);
   expect(state.character.balance).toBe(45);
 });
+
+test("home colors belong to their owner and are visible to visitors", async () => {
+  const { t, owner, worldId } = await setup();
+  await t.mutation(internal.admin.addMember, {
+    worldId,
+    subject: "user_visitor",
+  });
+  const visitor = t.withIdentity({ subject: "user_visitor" });
+  const before = await owner.query(api.game.snapshot, { worldId });
+  const colors = { worldId, wallColor: "#cfe3ef", floorColor: "#ae8a6b" };
+  await expect(
+    t.withIdentity({ subject: "stranger" }).mutation(api.game.decorate, colors),
+  ).rejects.toThrow();
+  await expect(
+    owner.mutation(api.game.decorate, { ...colors, wallColor: "invalid" }),
+  ).rejects.toThrow();
+  await owner.mutation(api.game.decorate, colors);
+  await owner.mutation(api.game.decorate, colors);
+  await owner.mutation(api.game.profile, {
+    worldId,
+    name: "New nickname",
+    color: "#db856f",
+  });
+  const after = await visitor.query(api.game.snapshot, { worldId });
+  expect(
+    after.homes.find((home) => home.id === before.character.id)?.homeStyle,
+  ).toEqual({ wallColor: colors.wallColor, floorColor: colors.floorColor });
+  expect(
+    after.homes.find((home) => home.id === after.character.id)?.homeStyle,
+  ).toBeUndefined();
+  const saved = await owner.query(api.game.snapshot, { worldId });
+  expect(saved.character.balance).toBe(before.character.balance);
+  expect(saved.character.inventory).toEqual(before.character.inventory);
+  await visitor.mutation(api.game.decorate, {
+    ...colors,
+    wallColor: "#f0d3df",
+  });
+  expect(
+    (await owner.query(api.game.snapshot, { worldId })).homes.find(
+      (home) => home.id === before.character.id,
+    )?.homeStyle?.wallColor,
+  ).toBe(colors.wallColor);
+});

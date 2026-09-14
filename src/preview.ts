@@ -1,3 +1,4 @@
+import { validHomeStyle } from "./content/homes";
 import { petFor } from "./content/pets";
 import { shopFor } from "./content/interiors";
 import { atDelivery, deliveryPlaces } from "./content/deliveries";
@@ -100,6 +101,18 @@ export function usePreview(): GameBridge {
           label = `Adopted ${pet.name}`;
           break;
         }
+        case "decorate": {
+          const homeStyle = {
+            wallColor: action.wallColor,
+            floorColor: action.floorColor,
+          };
+          if (!validHomeStyle(homeStyle))
+            throw new Error("Choose colors from the home palette.");
+          s.homes = s.homes.map((home) =>
+            home.id === c.id ? { ...home, homeStyle } : home,
+          );
+          break;
+        }
         case "profile":
           if (
             !action.name.trim() ||
@@ -109,7 +122,9 @@ export function usePreview(): GameBridge {
             throw new Error("Choose a name and color.");
           c.name = action.name.trim();
           c.color = action.color;
-          s.homes[0] = { id: c.id, name: c.name, color: c.color };
+          s.homes = s.homes.map((home) =>
+            home.id === c.id ? { ...home, name: c.name, color: c.color } : home,
+          );
           break;
         case "room":
           c.room = action.room;

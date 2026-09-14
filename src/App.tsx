@@ -1,3 +1,4 @@
+import { defaultHomeStyle, wallColors, floorColors } from "./content/homes";
 import { iceCreamShop, iceCreams } from "./content/iceCream";
 import { shelter, pets, petFor } from "./content/pets";
 import { toyStore, toys } from "./content/toys";
@@ -265,6 +266,7 @@ function LiveWorld({ worldId }: { worldId: GenericId<"worlds"> }) {
   const moveMutation = useMutation(api.move),
     enter = useMutation(api.enter),
     profile = useMutation(api.profile),
+    decorate = useMutation(api.decorate),
     transact = useMutation(api.transact),
     rest = useMutation(api.rest),
     emote = useMutation(api.emote);
@@ -330,7 +332,13 @@ function LiveWorld({ worldId }: { worldId: GenericId<"worlds"> }) {
           });
           pos.current = { x: value.x, y: value.y };
           posture.current = value.restId ?? null;
-        } else if (action.type === "profile")
+        } else if (action.type === "decorate")
+          await decorate({
+            worldId,
+            wallColor: action.wallColor,
+            floorColor: action.floorColor,
+          });
+        else if (action.type === "profile")
           await profile({ worldId, name: action.name, color: action.color });
         else {
           await moveMutation({
@@ -358,6 +366,7 @@ function LiveWorld({ worldId }: { worldId: GenericId<"worlds"> }) {
       enter,
       moveMutation,
       profile,
+      decorate,
       transact,
       rest,
       worldId,
@@ -410,6 +419,7 @@ function LiveWorld({ worldId }: { worldId: GenericId<"worlds"> }) {
 }
 
 type Panel =
+  | "decorate"
   | "profile"
   | "bag"
   | "bank"
@@ -472,7 +482,12 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
       setBusy(false);
     }
   };
+  const [homeStyle, setHomeStyle] = useState(defaultHomeStyle);
   const open = (value: Panel) => {
+    if (value === "decorate")
+      setHomeStyle(
+        homes.find((home) => home.id === c.id)?.homeStyle ?? defaultHomeStyle,
+      );
     if (value === "profile") {
       setName(c.name);
       setColor(c.color);
@@ -596,6 +611,7 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
     else if (parcel?.room) void perform({ type: "room", room: parcel.room });
   };
   const title = {
+    decorate: "Make your home your own",
     profile: "A little more you",
     bag: "Your little collection",
     bank: "Your pocket of possibilities",
@@ -815,6 +831,13 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
                 onClick={() => scene.current?.goTo(shopCounter.id)}
               >
                 {shop.action}
+              </button>
+            </nav>
+          )}
+          {c.room === `home:${c.id}` && (
+            <nav className="school-desks" aria-label="Your home">
+              <button className="secondary" onClick={() => open("decorate")}>
+                <Home size={17} /> Decorate my home
               </button>
             </nav>
           )}
@@ -1197,6 +1220,81 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
           )}
           {panel === "library" && <Library />}
           {panel === "school" && <School initialLessonId={schoolLesson} />}
+          {panel === "decorate" && (
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                void perform(
+                  { type: "decorate", ...homeStyle },
+                  "Your home has a fresh new look!",
+                  true,
+                );
+              }}
+            >
+              <p className="modal-intro">
+                Pick your favorite colors. Decorating is free, and your visitors
+                will see your choices!
+              </p>
+              <div
+                className="home-color-preview"
+                aria-label="Preview of your wall and floor colors"
+              >
+                <div style={{ background: homeStyle.wallColor }}>Walls</div>
+                <div style={{ background: homeStyle.floorColor }}>Floor</div>
+              </div>
+              {(
+                [
+                  {
+                    key: "wallColor",
+                    label: "Wall color",
+                    options: wallColors,
+                  },
+                  {
+                    key: "floorColor",
+                    label: "Floor color",
+                    options: floorColors,
+                  },
+                ] as const
+              ).map((group) => (
+                <fieldset className="home-palette" key={group.key}>
+                  <legend>{group.label}</legend>
+                  <div>
+                    {group.options.map((option) => (
+                      <button
+                        key={option.color}
+                        type="button"
+                        aria-pressed={homeStyle[group.key] === option.color}
+                        onClick={() =>
+                          setHomeStyle({
+                            ...homeStyle,
+                            [group.key]: option.color,
+                          })
+                        }
+                      >
+                        <span style={{ background: option.color }}>
+                          {homeStyle[group.key] === option.color && (
+                            <Check size={18} />
+                          )}
+                        </span>
+                        {option.name}
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
+              ))}
+              <button
+                type="button"
+                className="secondary"
+                disabled={busy}
+                onClick={() => setHomeStyle(defaultHomeStyle)}
+              >
+                Original colors
+              </button>
+              <button className="primary full" disabled={busy}>
+                {busy ? "Saving…" : "Save my colors"}
+              </button>
+            </form>
+          )}
           {panel === "profile" && (
             <form
               onSubmit={(e) => {
