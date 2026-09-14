@@ -1,3 +1,4 @@
+import { UpdateNotice } from "./UpdateNotice";
 import { shopFor, shopInteriors, shopCounter } from "./content/interiors";
 import { deliveryPlaces } from "./content/deliveries";
 import {
@@ -84,6 +85,7 @@ const displayError = (error: unknown) =>
 export default function App() {
   return (
     <ErrorBoundary>
+      <UpdateNotice />
       <Unauthenticated>
         <Welcome />
       </Unauthenticated>
@@ -98,7 +100,13 @@ export default function App() {
 }
 export function PreviewApp() {
   const bridge = usePreview();
-  return <GameShell bridge={bridge} />;
+  return (
+    <>
+      {" "}
+      <UpdateNotice />
+      <GameShell bridge={bridge} />
+    </>
+  );
 }
 function Loading() {
   return (

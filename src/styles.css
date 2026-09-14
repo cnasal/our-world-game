@@ -2172,3 +2172,19 @@ input {
   display: block;
   margin-top: 8px;
 }
+
+.update-notice {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: #fff5d9;
+  color: #463d2b;
+  border-bottom: 1px solid #dfcfa9;
+  font-size: 14px;
+}

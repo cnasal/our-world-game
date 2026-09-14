@@ -77,3 +77,10 @@ Draw a shop or room on paper or an iPad. Decide where the door, windows, furnitu
 5. Ask an adult to help put the change into the shared world.
 
 The local preview is a practice copy. Its coins and purchases do not change the family town. Do not paste account passwords or secret keys into an AI chat.
+
+The production build also publishes `version.json`. Open games check it once a
+minute while visible, when returning to the tab, and when reconnecting. A changed
+build shows a **Refresh game** notice; it never reloads automatically during play.
+Development previews skip this check. To check the notice locally, run
+`npm run build`, serve it with `npm run preview -- --port 5180`, then run
+`node scripts/update-check.mjs` (with the browser library path if needed).
