@@ -1,6 +1,14 @@
+import { toyStore } from "./toys";
 import { restaurant } from "./town";
 import { library } from "./library";
 export const shopInteriors = [
+  {
+    id: "toys",
+    room: "shop:toys",
+    name: toyStore.name,
+    action: "Browse toys",
+    wall: 0xdde4f5,
+  },
   {
     id: "cafe",
     room: "shop:cafe",

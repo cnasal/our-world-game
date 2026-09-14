@@ -14,7 +14,9 @@ export function deliveryPlaces(
   return [
     ...stops
       .filter((stop) =>
-        ["cafe", "restaurant", "library", "school", "hotel"].includes(stop.id),
+        ["toys", "cafe", "restaurant", "library", "school", "hotel"].includes(
+          stop.id,
+        ),
       )
       .map((stop) => ({
         id: stop.id,

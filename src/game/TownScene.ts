@@ -1,3 +1,4 @@
+import { toyStore } from "../content/toys";
 import { shopFor, shopCounter } from "../content/interiors";
 import {
   guestRooms,
@@ -752,6 +753,18 @@ export class TownScene extends Phaser.Scene {
     this.rect(1575, 425, 70, 110, 0xe8d9b6);
     this.building(1500, 261, 220, 167, 0x9294b7, 0xffedcf, hotel.name, "hotel");
     this.text(1610, 324, "HOTEL", 18, "#5c617b");
+    this.rect(1325, 365, 70, 150, 0xe8d9b6);
+    this.building(
+      1260,
+      230,
+      200,
+      127,
+      0x929bc8,
+      0xf7e3d1,
+      toyStore.name,
+      "toys",
+    );
+    this.text(1360, 295, "TOYS", 18, "#655783");
     this.tree(1765, 210, 0.9);
     this.tree(1620, 770, 1.3);
     // Café terrace.
@@ -778,7 +791,7 @@ export class TownScene extends Phaser.Scene {
     this.text(720, 182, "a little place for us", 17, "#708563");
     for (const [x, y, s] of [
       [82, 230, 1.5],
-      [1280, 231, 1.4],
+      [1450, 160, 1.0],
       [550, 269, 1.25],
       [48, 917, 1.0],
       [1395, 690, 0.8],
@@ -787,7 +800,7 @@ export class TownScene extends Phaser.Scene {
       [852, 936, 1.2],
       [1310, 925, 1.6],
       [112, 110, 1.1],
-      [1350, 455, 1.1],
+      [1750, 650, 1.1],
       [554, 419, 0.9],
       [1210, 117, 0.9],
     ])
@@ -837,6 +850,34 @@ export class TownScene extends Phaser.Scene {
             );
       }
       this.text(720, 372, "Stories for everyone", 19, "#fff9e7");
+    } else if (shop.id === "toys") {
+      for (const x of [390, 960]) {
+        this.rect(x, 235, 90, 140, 0xa08063, 6);
+        for (let row = 0; row < 3; row++) {
+          this.rect(x + 6, 275 + row * 40, 78, 6, 0xf1d6ae);
+          for (let toy = 0; toy < 3; toy++) {
+            this.rect(
+              x + 10 + toy * 25,
+              248 + row * 40,
+              19,
+              25,
+              [0xc48c79, 0x969fc2, 0xa1b890][(row + toy) % 3],
+              4,
+            );
+          }
+        }
+      }
+      const bear = this.add.graphics().fillStyle(0xc59b73);
+      bear
+        .fillCircle(700, 321, 9)
+        .fillCircle(740, 321, 9)
+        .fillCircle(720, 333, 24);
+      bear
+        .fillStyle(0x514839)
+        .fillCircle(712, 331, 3)
+        .fillCircle(728, 331, 3)
+        .fillCircle(720, 342, 4);
+      this.text(720, 372, "Little toys, big imagination", 19, "#fff9e7");
     } else if (shop.id === "post") {
       for (const [x, y] of [
         [410, 320],

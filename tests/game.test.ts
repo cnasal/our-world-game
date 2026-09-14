@@ -696,3 +696,35 @@ describe("private shared town", () => {
     ).rejects.toThrow();
   });
 });
+
+test("toys charge once, require ownership, and stay in the bag after playing", async () => {
+  const { t, owner, worldId } = await setup();
+  const buy = {
+    worldId,
+    type: "buy" as const,
+    itemId: "toy-teddy",
+    requestId: "toy-purchase",
+  };
+  await expect(owner.mutation(api.game.transact, buy)).rejects.toThrow();
+  await owner.mutation(api.game.enter, { worldId, room: "shop:toys" });
+  await expect(
+    t.withIdentity({ subject: "outsider" }).mutation(api.game.transact, buy),
+  ).rejects.toThrow();
+  await expect(
+    owner.mutation(api.game.transact, {
+      ...buy,
+      type: "use",
+      requestId: "unowned",
+    }),
+  ).rejects.toThrow();
+  await owner.mutation(api.game.transact, buy);
+  await owner.mutation(api.game.transact, buy);
+  for (const requestId of ["play-one", "play-one", "play-two"])
+    await owner.mutation(api.game.transact, { ...buy, type: "use", requestId });
+  const { character } = await owner.query(api.game.snapshot, { worldId });
+  expect(character.balance).toBe(40);
+  expect(character.inventory["toy-teddy"]).toBe(1);
+  expect(deliveryPlaces([]).find((place) => place.id === "toys")?.room).toBe(
+    "shop:toys",
+  );
+});

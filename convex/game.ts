@@ -360,8 +360,11 @@ export const transact = mutation({
       } else {
         if (!(inventory[item.id] > 0))
           throw new Error("There are none left in your bag.");
-        inventory[item.id] -= 1;
-        label = `Enjoyed ${item.name}`;
+        if (item.shop !== "toys") inventory[item.id] -= 1;
+        label =
+          item.shop === "toys"
+            ? `Played with ${item.name}`
+            : `Enjoyed ${item.name}`;
       }
       await ctx.db.patch(c._id, { inventory, balance: c.balance + amount });
     }

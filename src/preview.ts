@@ -171,8 +171,11 @@ export function usePreview(): GameBridge {
           } else {
             if (!(c.inventory[item.id] > 0))
               throw new Error("Your bag is empty.");
-            c.inventory[item.id]--;
-            label = `Enjoyed ${item.name}`;
+            if (item.shop !== "toys") c.inventory[item.id]--;
+            label =
+              item.shop === "toys"
+                ? `Played with ${item.name}`
+                : `Enjoyed ${item.name}`;
           }
         }
       }

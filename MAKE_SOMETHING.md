@@ -84,3 +84,12 @@ build shows a **Refresh game** notice; it never reloads automatically during pla
 Development previews skip this check. To check the notice locally, run
 `npm run build`, serve it with `npm run preview -- --port 5180`, then run
 `node scripts/update-check.mjs` (with the browser library path if needed).
+
+### Toys
+
+`src/content/toys.ts` holds The Nasal Toy Store's name, welcome, and toy catalog.
+Players can walk inside, use the counter, sit on the chairs, and deliver packages.
+Purchased toys stay in the bag when **Play** is clicked; food and drinks still get
+used up. Keep toy IDs stable to preserve saved collections. Run
+`node scripts/toy-check.mjs` against the development preview to check the toy-store
+walkthrough (default port 5176, or set `GAME_TEST_URL`).
