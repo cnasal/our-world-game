@@ -127,3 +127,15 @@ updates the room without moving people, pets, or furniture. Existing homes keep
 their original look until decorated. Use `node scripts/home-colors-check.mjs`
 against the development preview to check saving, canceling, restoring defaults,
 resting during painting, visitor isolation, and phone layout.
+
+### Bank savings
+
+The Nasal Bank has a walkable room, seats, a counter, and package deliveries.
+Players can deposit or withdraw whole pretend coins with no fees. Savings are
+stored separately from pocket coins in the optional character `savings` field;
+old characters begin with zero savings. Purchases still use pocket coins only.
+`src/content/bank.ts` shares transfer validation with the preview. Live transfers
+verify world membership and bank entry, update both balances atomically, and
+preserve the existing retry receipts. Players can see their balances from the
+pocket button anywhere, but must visit the bank to move coins.
+Run `node scripts/bank-check.mjs` against the development preview for the bank walkthrough.

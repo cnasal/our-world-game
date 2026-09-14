@@ -1,3 +1,4 @@
+import { bank } from "../content/bank";
 import { defaultHomeStyle } from "../content/homes";
 import { iceCreamShop } from "../content/iceCream";
 import { shelter, petFor } from "../content/pets";
@@ -861,7 +862,7 @@ export class TownScene extends Phaser.Scene {
     cone.fillStyle(0xd7a86f).fillTriangle(1895, 279, 1925, 279, 1910, 311);
     cone.fillStyle(0xf3c3d3).fillCircle(1910, 271, 19);
     this.tree(2050, 680, 1.2);
-    this.rect(1275, 790, 370, 86, 0xe8d9b6, 20);
+    this.rect(1275, 790, 670, 86, 0xe8d9b6, 20);
     this.building(
       1510,
       630,
@@ -873,6 +874,8 @@ export class TownScene extends Phaser.Scene {
       "shelter",
     );
     this.text(1610, 694, "ANIMAL SHELTER", 13, "#526346");
+    this.building(1810, 630, 200, 127, 0x8da395, 0xf4edd6, bank.name, "bank");
+    this.text(1910, 694, "BANK", 20, "#526346");
     // Café terrace.
     const terrace = this.add.graphics();
     terrace.fillStyle(0xd7c9a5).fillRoundedRect(108, 398, 100, 74, 14);
@@ -956,6 +959,20 @@ export class TownScene extends Phaser.Scene {
             );
       }
       this.text(720, 372, "Stories for everyone", 19, "#fff9e7");
+    } else if (shop.id === "bank") {
+      this.rect(960, 234, 95, 136, 0x8daba2, 10);
+      this.rect(969, 244, 77, 116, 0xbbcdc4, 7);
+      const vault = this.add.graphics();
+      vault
+        .lineStyle(4, 0x718e83)
+        .strokeCircle(1007, 302, 21)
+        .lineBetween(986, 302, 1028, 302)
+        .lineBetween(1007, 281, 1007, 323);
+      for (let i = 0; i < 3; i++) {
+        const coin = this.add.graphics();
+        coin.fillStyle(0xe3bd61).fillEllipse(660 + i * 45, 326, 30, 13);
+      }
+      this.text(720, 372, "Save a little for another day", 18, "#fff9e7");
     } else if (shop.id === "icecream") {
       const scoops = this.add.graphics();
       for (const [i, color] of [

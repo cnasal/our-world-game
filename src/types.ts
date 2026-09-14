@@ -4,6 +4,7 @@ export type Character = {
   name: string;
   color: string;
   balance: number;
+  savings?: number;
   room: string;
   restId?: string;
   petId?: string;
@@ -36,6 +37,7 @@ export type Snapshot = {
   receipts: Receipt[];
 };
 export type GameAction =
+  | { type: "deposit" | "withdraw"; coins: number; requestId: string }
   | ({ type: "decorate" } & HomeStyle)
   | { type: "adopt"; itemId: string; requestId: string }
   | { type: "profile"; name: string; color: string }

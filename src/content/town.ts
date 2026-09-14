@@ -1,3 +1,4 @@
+import { bank } from "./bank";
 import { iceCreamShop, iceCreams } from "./iceCream";
 import { shelter } from "./pets";
 import { toyStore, toys } from "./toys";
@@ -118,6 +119,7 @@ export const avatarColors = [
 ];
 export const town = { width: 2100, height: 1040, spawn: { x: 720, y: 665 } };
 export const stops = [
+  { id: "bank", name: bank.name, x: 1910, y: 815 },
   { id: "icecream", name: iceCreamShop.name, x: 1910, y: 465 },
   { id: "shelter", name: shelter.name, x: 1610, y: 815 },
   { id: "toys", name: toyStore.name, x: 1360, y: 415 },

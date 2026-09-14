@@ -1,3 +1,4 @@
+import { transferCoins } from "../src/content/bank";
 import { validHomeStyle } from "../src/content/homes";
 import { petFor } from "../src/content/pets";
 import { shopFor } from "../src/content/interiors";
@@ -79,6 +80,7 @@ export const snapshot = query({
         name: c.name,
         color: c.color,
         balance: c.balance,
+        savings: c.savings ?? 0,
         inventory: c.inventory,
         petId: c.petId,
         delivery: c.delivery,
@@ -287,6 +289,8 @@ export const transact = mutation({
   args: {
     worldId: v.id("worlds"),
     type: v.union(
+      v.literal("deposit"),
+      v.literal("withdraw"),
       v.literal("adopt"),
       v.literal("eatFree"),
       v.literal("buy"),
@@ -294,6 +298,7 @@ export const transact = mutation({
       v.literal("startJob"),
       v.literal("finishJob"),
     ),
+    coins: v.optional(v.number()),
     itemId: v.optional(v.string()),
     destination: v.optional(v.string()),
     requestId: v.string(),
@@ -324,7 +329,22 @@ export const transact = mutation({
     }
     let label = "",
       amount = 0;
-    if (args.type === "adopt") {
+    if (args.type === "deposit" || args.type === "withdraw") {
+      if (p?.room !== "shop:bank")
+        throw new Error("Come inside the bank to move your coins.");
+      const next = transferCoins(
+        c.balance,
+        c.savings ?? 0,
+        args.type,
+        args.coins ?? 0,
+      );
+      amount = next.balance - c.balance;
+      label =
+        args.type === "deposit"
+          ? "Put coins into savings"
+          : "Took coins out of savings";
+      await ctx.db.patch(c._id, next);
+    } else if (args.type === "adopt") {
       if (p?.room !== "shop:shelter")
         throw new Error("Come inside the animal shelter to choose a pet.");
       if (c.petId)

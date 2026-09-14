@@ -15,6 +15,7 @@ export default defineSchema({
     name: v.string(),
     color: v.string(),
     balance: v.number(),
+    savings: v.optional(v.number()),
     inventory: v.record(v.string(), v.number()),
     petId: v.optional(v.string()),
     homeStyle: v.optional(

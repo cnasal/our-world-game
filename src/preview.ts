@@ -1,3 +1,4 @@
+import { transferCoins } from "./content/bank";
 import { validHomeStyle } from "./content/homes";
 import { petFor } from "./content/pets";
 import { shopFor } from "./content/interiors";
@@ -87,6 +88,24 @@ export function usePreview(): GameBridge {
       )
         return;
       switch (action.type) {
+        case "deposit":
+        case "withdraw": {
+          if (c.room !== "shop:bank")
+            throw new Error("Come inside the bank to move your coins.");
+          const next = transferCoins(
+            c.balance,
+            c.savings ?? 0,
+            action.type,
+            action.coins,
+          );
+          amount = next.balance - c.balance;
+          c.savings = next.savings;
+          label =
+            action.type === "deposit"
+              ? "Put coins into savings"
+              : "Took coins out of savings";
+          break;
+        }
         case "adopt": {
           if (c.room !== "shop:shelter")
             throw new Error("Come inside the animal shelter to choose a pet.");

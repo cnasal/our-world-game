@@ -2250,3 +2250,15 @@ input {
   place-items: center;
   color: #403b32;
 }
+
+.bank-savings {
+  text-align: center;
+  font-size: 18px;
+  color: #526346;
+}
+.bank-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px 0;
+}

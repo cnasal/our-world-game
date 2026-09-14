@@ -887,3 +887,84 @@ test("home colors belong to their owner and are visible to visitors", async () =
     )?.homeStyle?.wallColor,
   ).toBe(colors.wallColor);
 });
+
+test("bank transfers preserve coins, reject invalid amounts, and only affect the owner", async () => {
+  const { t, owner, worldId } = await setup();
+  const deposit = {
+    worldId,
+    type: "deposit" as const,
+    coins: 20,
+    requestId: "save-coins",
+  };
+  await expect(owner.mutation(api.game.transact, deposit)).rejects.toThrow(
+    "inside the bank",
+  );
+  await owner.mutation(api.game.enter, { worldId, room: "shop:bank" });
+  await expect(
+    t
+      .withIdentity({ subject: "user_stranger" })
+      .mutation(api.game.transact, deposit),
+  ).rejects.toThrow();
+  for (const coins of [-1, 0, 1.5, 51, Number.MAX_SAFE_INTEGER + 1]) {
+    await expect(
+      owner.mutation(api.game.transact, {
+        ...deposit,
+        coins,
+        requestId: `invalid-${coins}`,
+      }),
+    ).rejects.toThrow();
+  }
+  await owner.mutation(api.game.transact, deposit);
+  await owner.mutation(api.game.transact, deposit);
+  let state = await owner.query(api.game.snapshot, { worldId });
+  expect(state.character.balance).toBe(30);
+  expect(state.character.savings).toBe(20);
+  await expect(
+    owner.mutation(api.game.transact, {
+      ...deposit,
+      type: "withdraw",
+      coins: 21,
+      requestId: "too-much",
+    }),
+  ).rejects.toThrow();
+  const withdraw = {
+    ...deposit,
+    type: "withdraw" as const,
+    coins: 7,
+    requestId: "take-coins",
+  };
+  await owner.mutation(api.game.transact, withdraw);
+  await owner.mutation(api.game.transact, withdraw);
+  await t.mutation(internal.admin.addMember, {
+    worldId,
+    subject: "user_banker",
+  });
+  const other = await t
+    .withIdentity({ subject: "user_banker" })
+    .query(api.game.snapshot, { worldId });
+  expect(other.character.balance).toBe(50);
+  expect(other.character.savings).toBe(0);
+  state = await owner.query(api.game.snapshot, { worldId });
+  expect(state.character.balance).toBe(37);
+  expect(state.character.savings).toBe(13);
+  expect(state.character.inventory).toEqual({});
+});
+
+test("simultaneous bank deposits cannot spend the same pocket coins twice", async () => {
+  const { owner, worldId } = await setup();
+  await owner.mutation(api.game.enter, { worldId, room: "shop:bank" });
+  const results = await Promise.allSettled(
+    ["a", "b"].map((requestId) =>
+      owner.mutation(api.game.transact, {
+        worldId,
+        type: "deposit",
+        coins: 40,
+        requestId,
+      }),
+    ),
+  );
+  expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+  const { character } = await owner.query(api.game.snapshot, { worldId });
+  expect(character.balance).toBe(10);
+  expect(character.savings).toBe(40);
+});

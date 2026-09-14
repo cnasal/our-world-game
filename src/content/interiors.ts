@@ -1,9 +1,17 @@
+import { bank } from "./bank";
 import { iceCreamShop } from "./iceCream";
 import { shelter } from "./pets";
 import { toyStore } from "./toys";
 import { restaurant } from "./town";
 import { library } from "./library";
 export const shopInteriors = [
+  {
+    id: "bank",
+    room: "shop:bank",
+    name: bank.name,
+    action: "Visit the bank counter",
+    wall: 0xd5e5dc,
+  },
   {
     id: "icecream",
     room: "shop:icecream",
