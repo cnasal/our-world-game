@@ -46,6 +46,16 @@ Visit Little Post and choose a destination before taking your parcel. The delive
 
 The list of delivery places lives in `src/content/deliveries.ts`.
 
+## Explore inside the shops
+
+The café, restaurant, library, and Little Post each have a room you can walk around. Tap a counter or use the button below the game to order, pick a book, or collect a parcel. You can sit down and use the door to leave.
+
+Room colors and counter labels live in `src/content/interiors.ts`.
+
+## Check your version
+
+The small **Built** date and time at the bottom shows when this copy of the game was built. It uses UTC so everyone can compare the same timestamp. Development previews say **Dev**. The timestamp stays the same when you refresh; a new deployment has a new build time.
+
 ## Write something kind
 
 Think of a welcoming sentence for the café or a funny description for a drink. Short sentences are great, especially for our younger readers.

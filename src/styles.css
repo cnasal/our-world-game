@@ -2157,3 +2157,18 @@ input {
   min-width: 0;
   overflow-wrap: anywhere;
 }
+
+.build-version {
+  display: inline-block;
+  font-size: 10px;
+  color: #69795d;
+  font-variant-numeric: tabular-nums;
+}
+.app-footer {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.welcome > footer .build-version {
+  display: block;
+  margin-top: 8px;
+}

@@ -1,3 +1,4 @@
+import { shopFor, shopCounter } from "../content/interiors";
 import {
   guestRooms,
   hotel,
@@ -76,6 +77,17 @@ export class TownScene extends Phaser.Scene {
           return;
         }
       }
+      if (
+        shopFor(this.room) &&
+        ((Math.abs(p.x - shopCounter.x) < 180 && p.y > 260 && p.y < 465) ||
+          (this.room === "shop:library" &&
+            p.y > 235 &&
+            p.y < 375 &&
+            ((p.x > 395 && p.x < 480) || (p.x > 960 && p.x < 1045))))
+      ) {
+        this.goTo(shopCounter.id);
+        return;
+      }
       if (isHotelRoom(this.room)) {
         const hit = hotelStops(this.room).find(
           (entry) =>
@@ -153,6 +165,7 @@ export class TownScene extends Phaser.Scene {
       this.callbacks.nearby(null);
       if (this.room === "town") this.drawTown();
       else if (this.room === "school") this.drawSchool();
+      else if (shopFor(this.room)) this.drawShop();
       else if (this.room === hotel.lobby || this.room === hotel.dining)
         this.drawHotel();
       else if (isHotelRoom(this.room)) {
@@ -241,6 +254,7 @@ export class TownScene extends Phaser.Scene {
     }
   }
   private destination(id: string) {
+    if (shopFor(this.room) && id === shopCounter.id) return shopCounter;
     if (id.startsWith("rest:"))
       return furnitureFor(this.room).find((item) => item.id === id.slice(5))
         ?.approach;
@@ -350,7 +364,17 @@ export class TownScene extends Phaser.Scene {
         stops.find(
           (s) => Math.hypot(s.x - this.avatar.x, s.y - this.avatar.y) < 125,
         )?.id ?? null;
-    else if (isHotelRoom(this.room))
+    else if (shopFor(this.room)) {
+      if (this.avatar.y > 785 && Math.abs(this.avatar.x - 720) < 90)
+        nearby = "exit";
+      else if (
+        Math.hypot(
+          this.avatar.x - shopCounter.x,
+          this.avatar.y - shopCounter.y,
+        ) < 90
+      )
+        nearby = shopCounter.id;
+    } else if (isHotelRoom(this.room))
       nearby =
         hotelStops(this.room).find(
           (entry) =>
@@ -782,6 +806,78 @@ export class TownScene extends Phaser.Scene {
     this.rect(590, 635, 7, 51, 0xaa8c63, 2);
     this.rect(551, 623, 85, 28, 0xfff1cb, 5);
     this.text(593, 637, "HOME ↓", 13, "#7c795c");
+  }
+  private drawShop() {
+    const shop = shopFor(this.room)!;
+    this.cameras.main.setBackgroundColor("#b7c9a2");
+    this.rect(0, 0, town.width, town.height, 0xb7c9a2);
+    this.rect(295, 185, 860, 710, 0x80916e, 25);
+    this.rect(315, 170, 810, 700, 0xf8ecd4, 18);
+    this.rect(335, 200, 770, 180, shop.wall, 8);
+    this.rect(335, 380, 770, 465, 0xdfbd96);
+    const floor = this.add.graphics().lineStyle(2, 0xc9a880, 0.6);
+    for (let y = 410; y < 845; y += 38) floor.lineBetween(335, y, 1105, y);
+    this.rect(625, 560, 190, 185, shop.wall, 20);
+    this.rect(552, 330, 336, 68, 0xb29069, 8);
+    this.rect(545, 320, 350, 35, 0xf1d6ae, 8);
+    this.obstacles.push({ x: 545, y: 320, w: 350, h: 78 });
+    this.text(720, 269, shop.action, 26, "#656079");
+    if (shop.id === "library") {
+      for (const x of [395, 960]) {
+        this.rect(x, 235, 85, 140, 0xa08063, 6);
+        for (let row = 0; row < 3; row++)
+          for (let book = 0; book < 6; book++)
+            this.rect(
+              x + 8 + book * 12,
+              247 + row * 41,
+              9,
+              31,
+              [0xa1b890, 0xc48c79, 0x969fc2][book % 3],
+              2,
+            );
+      }
+      this.text(720, 372, "Stories for everyone", 19, "#fff9e7");
+    } else if (shop.id === "post") {
+      for (const [x, y] of [
+        [410, 320],
+        [950, 320],
+        [975, 275],
+      ]) {
+        this.rect(x, y, 60, 45, 0xc49b70, 4);
+        this.rect(x + 26, y, 8, 45, 0xf0d6a2);
+      }
+      this.text(720, 372, "Packages start here", 19, "#fff9e7");
+    } else {
+      for (const x of [500, 940]) {
+        this.rect(x - 82, 495, 164, 66, 0xb29069, 10);
+        this.rect(x - 82, 488, 164, 55, 0xf5e5c4, 10);
+        this.obstacles.push({ x: x - 82, y: 488, w: 164, h: 73 });
+        const plate = this.add.graphics();
+        plate.fillStyle(0xfffdf4).fillEllipse(x, 513, 44, 24);
+      }
+      for (const x of [635, 720, 805]) {
+        this.rect(
+          x - 12,
+          308,
+          24,
+          28,
+          shop.id === "cafe" ? 0xcfa2a0 : 0xa3b88e,
+          5,
+        );
+      }
+    }
+    this.text(720, 121, shop.name, 28, "#486048");
+    this.text(
+      720,
+      912,
+      shop.id === "library"
+        ? "Tap the books to pick a story."
+        : "Tap the counter, or walk over and press E.",
+      20,
+      "#60775a",
+    );
+    this.rect(659, 813, 122, 34, 0xf3dfb6, 5);
+    this.text(720, 830, "TOWN ↓", 16, "#8f7857");
   }
   private drawHotel() {
     const dining = this.room === hotel.dining;

@@ -34,6 +34,9 @@ async function standUp() {
 try {
   await page.goto(`${base}/?preview`);
   await page.waitForSelector("canvas");
+  const firstBuild = await page
+    .locator(".build-version")
+    .getAttribute("datetime");
   await page.getByRole("button", { name: "Edit character" }).click();
   await page.getByLabel("What should we call you?").fill("");
   await page.getByLabel("What should we call you?").pressSequentially("Daisy");
@@ -49,10 +52,28 @@ try {
   assert.match(await page.locator(".profile-top").innerText(), /Daisy/);
   await page.getByRole("button", { name: "Let’s help out" }).click();
   await page
+    .getByRole("button", { name: "Pick up a package", exact: true })
+    .waitFor({ timeout: 15000 });
+  assert.equal(await page.locator("dialog").count(), 0);
+  await page.screenshot({
+    path: "/tmp/our-world-post-inside.png",
+    fullPage: true,
+  });
+  await page
+    .getByRole("button", { name: "Pick up a package", exact: true })
+    .click();
+  await page
     .getByRole("button", { name: "I’ll take the parcel" })
     .waitFor({ timeout: 15000 });
   await page.getByRole("button", { name: "I’ll take the parcel" }).click();
   await page.getByRole("button", { name: "Take it to the café" }).click();
+  await page
+    .getByRole("button", { name: "Order drinks", exact: true })
+    .waitFor({ timeout: 15000 });
+  await page.getByRole("button", { name: "Order drinks", exact: true }).click();
+  await page
+    .getByRole("heading", { name: "Something lovely to sip", exact: true })
+    .waitFor({ timeout: 10000 });
   await page
     .getByRole("button", { name: "Deliver · +15" })
     .waitFor({ timeout: 15000 });
@@ -70,7 +91,15 @@ try {
   await page.getByRole("button", { name: "Close dialog" }).click();
   await page.getByRole("button", { name: /The Nasal Restaurant/ }).click();
   await page
-    .getByRole("heading", { name: "The Nasal Restaurant", exact: true })
+    .getByRole("button", { name: "Order food", exact: true })
+    .waitFor({ timeout: 15000 });
+  await page.getByRole("button", { name: "Order food", exact: true }).click();
+  await page
+    .getByRole("heading", {
+      name: "The Nasal Restaurant",
+      exact: true,
+      level: 2,
+    })
     .waitFor({ timeout: 15000 });
   await page.getByRole("button", { name: "10 Buy", exact: true }).click();
   assert.match(await page.locator(".profile-bottom").innerText(), /47/);
@@ -85,9 +114,16 @@ try {
     /A little room for lovely things/,
   );
   await page.getByRole("button", { name: "Close dialog" }).click();
+  await page.getByRole("button", { name: "Our town", exact: true }).click();
   await restAt("Sit on café chair (left)", "cafe-chair-left");
   await standUp();
   await page.getByRole("button", { name: /The Nasal Library/ }).click();
+  await page
+    .getByRole("button", { name: "Choose a book", exact: true })
+    .waitFor({ timeout: 15000 });
+  await page
+    .getByRole("button", { name: "Choose a book", exact: true })
+    .click();
   await page
     .getByRole("button", { name: "Read The Dragon Who Sneezed", exact: true })
     .waitFor({ timeout: 15000 });
@@ -268,6 +304,12 @@ try {
       .click();
     await page.getByRole("button", { name: /The Nasal Library/ }).click();
     await page
+      .getByRole("button", { name: "Choose a book", exact: true })
+      .waitFor({ timeout: 15000 });
+    await page
+      .getByRole("button", { name: "Choose a book", exact: true })
+      .click();
+    await page
       .getByRole("button", { name: "Read The Missing Sock", exact: true })
       .waitFor({ timeout: 15000 });
     await page
@@ -323,6 +365,12 @@ try {
       fullPage: true,
     });
   }
+  const stamp = await page.locator(".build-version").innerText();
+  assert.equal(
+    await page.locator(".build-version").getAttribute("datetime"),
+    firstBuild,
+  );
+  assert.match(stamp, /Built \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} UTC/);
   assert.deepEqual(errors, []);
   console.log(
     "PASS: editable profile, path navigation, delivery, café and restaurant purchases, saved meals, consumption, library navigation and reading, school entry, classroom walking, hints, lessons and exit, sitting and lying down, standing and saved poses, home visits, saved progress, tablet/phone layout, no page errors.",

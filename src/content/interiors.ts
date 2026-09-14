@@ -1,0 +1,36 @@
+import { restaurant } from "./town";
+import { library } from "./library";
+export const shopInteriors = [
+  {
+    id: "cafe",
+    room: "shop:cafe",
+    name: "Cloud Café",
+    action: "Order drinks",
+    wall: 0xf0ddcd,
+  },
+  {
+    id: "restaurant",
+    room: "shop:restaurant",
+    name: restaurant.name,
+    action: "Order food",
+    wall: 0xf0dfb9,
+  },
+  {
+    id: "library",
+    room: "shop:library",
+    name: library.name,
+    action: "Choose a book",
+    wall: 0xe3d9e8,
+  },
+  {
+    id: "post",
+    room: "shop:post",
+    name: "Little Post",
+    action: "Pick up a package",
+    wall: 0xd5e3d9,
+  },
+] as const;
+export function shopFor(room: string) {
+  return shopInteriors.find((shop) => shop.room === room);
+}
+export const shopCounter = { id: "shop-counter", x: 720, y: 440 };

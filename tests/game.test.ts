@@ -1,3 +1,4 @@
+import { shopInteriors } from "../src/content/interiors";
 import { deliveryPlaces } from "../src/content/deliveries";
 import { stops } from "../src/content/town";
 import { guestRooms, hotel, hotelMeals } from "../src/content/hotel";
@@ -606,6 +607,72 @@ describe("private shared town", () => {
     expect(
       (await owner.query(api.game.snapshot, { worldId })).character.balance,
     ).toBe(65);
+  });
+  test("shop interiors are private shared rooms and support their own services", async () => {
+    const { owner, worldId, t } = await setup();
+    await t.mutation(internal.admin.addMember, {
+      worldId,
+      subject: "user_shopper",
+    });
+    const shopper = t.withIdentity({ subject: "user_shopper" });
+    for (const shop of shopInteriors) {
+      for (const player of [owner, shopper])
+        await player.mutation(api.game.enter, { worldId, room: shop.room });
+      expect(
+        await shopper.query(api.game.people, { worldId, room: shop.room }),
+      ).toHaveLength(2);
+      await expect(
+        t
+          .withIdentity({ subject: "user_outsider" })
+          .mutation(api.game.enter, { worldId, room: shop.room }),
+      ).rejects.toThrow();
+    }
+    await expect(
+      owner.mutation(api.game.enter, { worldId, room: "shop:unknown" }),
+    ).rejects.toThrow();
+    await owner.mutation(api.game.transact, {
+      worldId,
+      type: "startJob",
+      destination: "restaurant",
+      requestId: "inside-pickup",
+    });
+    await owner.mutation(api.game.enter, { worldId, room: "shop:cafe" });
+    await owner.mutation(api.game.transact, {
+      worldId,
+      type: "buy",
+      itemId: "berry-milk",
+      requestId: "inside-drink",
+    });
+    await expect(
+      owner.mutation(api.game.transact, {
+        worldId,
+        type: "buy",
+        itemId: "sunny-pizza",
+        requestId: "wrong-counter",
+      }),
+    ).rejects.toThrow();
+    await expect(
+      owner.mutation(api.game.transact, {
+        worldId,
+        type: "finishJob",
+        requestId: "wrong-shop",
+      }),
+    ).rejects.toThrow();
+    await owner.mutation(api.game.enter, { worldId, room: "shop:restaurant" });
+    await owner.mutation(api.game.transact, {
+      worldId,
+      type: "finishJob",
+      requestId: "inside-delivery",
+    });
+    await owner.mutation(api.game.transact, {
+      worldId,
+      type: "buy",
+      itemId: "sunny-pizza",
+      requestId: "inside-meal",
+    });
+    expect(
+      (await owner.query(api.game.snapshot, { worldId })).character.balance,
+    ).toBe(47);
   });
   test("renaming preserves ownership, home, balance, and inventory", async () => {
     const { owner, worldId } = await setup();

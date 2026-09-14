@@ -27,6 +27,12 @@ try {
       .getByRole("button", { name: "Let’s help out", exact: true })
       .click();
     await page
+      .getByRole("button", { name: "Pick up a package", exact: true })
+      .waitFor({ timeout: 15000 });
+    await page
+      .getByRole("button", { name: "Pick up a package", exact: true })
+      .click();
+    await page
       .getByLabel("Where would you like to deliver?")
       .waitFor({ timeout: 15000 });
     await page

@@ -1,3 +1,4 @@
+import { shopInteriors } from "./interiors";
 import { stops } from "./town";
 import { guestRooms, hotel } from "./hotel";
 export type DeliveryPlace = {
@@ -24,7 +25,7 @@ export function deliveryPlaces(
             ? "school"
             : stop.id === "hotel"
               ? hotel.lobby
-              : undefined,
+              : shopInteriors.find((shop) => shop.id === stop.id)?.room,
         outside: true,
       })),
     ...homes.map((home) => ({

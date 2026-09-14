@@ -1,3 +1,4 @@
+import { shopFor } from "../src/content/interiors";
 import { atDelivery, deliveryPlaces } from "../src/content/deliveries";
 import { hotel, hotelMeals, isHotelRoom } from "../src/content/hotel";
 import { furnitureFor } from "../src/content/furniture";
@@ -155,7 +156,12 @@ export const enter = mutation({
   args: { worldId: v.id("worlds"), room: v.string() },
   handler: async (ctx, { worldId, room }) => {
     const c = await member(ctx, worldId);
-    if (room !== "town" && room !== "school" && !isHotelRoom(room)) {
+    if (
+      room !== "town" &&
+      room !== "school" &&
+      !isHotelRoom(room) &&
+      !shopFor(room)
+    ) {
       const homes = await ctx.db
         .query("characters")
         .withIndex("by_world", (q) => q.eq("worldId", worldId))
@@ -283,6 +289,7 @@ export const transact = mutation({
       return;
     const p = await position(ctx, c._id);
     function near(stopId: string) {
+      if (p?.room === `shop:${stopId}` && shopFor(p.room)) return;
       const stop = stops.find((s) => s.id === stopId)!;
       if (
         !p ||

@@ -1,3 +1,4 @@
+import { shopFor } from "./content/interiors";
 import { atDelivery, deliveryPlaces } from "./content/deliveries";
 import { hotel, hotelMeals } from "./content/hotel";
 import { furnitureFor } from "./content/furniture";
@@ -71,6 +72,7 @@ export function usePreview(): GameBridge {
       const s = structuredClone(current.current),
         c = s.character;
       const near = (id: string) => {
+        if (c.room === `shop:${id}` && shopFor(c.room)) return;
         const p = stops.find((x) => x.id === id)!;
         if (c.room !== "town" || Math.hypot(c.x - p.x, c.y - p.y) > 160)
           throw new Error(`Walk to ${p.name} first.`);

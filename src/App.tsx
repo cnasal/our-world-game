@@ -1,3 +1,4 @@
+import { shopFor, shopInteriors, shopCounter } from "./content/interiors";
 import { deliveryPlaces } from "./content/deliveries";
 import {
   hotel,
@@ -110,6 +111,19 @@ function Loading() {
     </div>
   );
 }
+function BuildVersion() {
+  const builtAt = import.meta.env.VITE_BUILD_TIME as string;
+  return (
+    <time
+      className="build-version"
+      dateTime={builtAt}
+      title="When this version was built (UTC)"
+    >
+      {import.meta.env.DEV ? "Dev · " : ""}Built{" "}
+      {builtAt.replace("T", " ").slice(0, 19)} UTC
+    </time>
+  );
+}
 function Brand() {
   return (
     <a className="brand" href="/" aria-label="Our World home">
@@ -180,7 +194,9 @@ function Welcome() {
           </span>
         </div>
       </main>
-      <footer>Little adventures. Big imaginations. Made together.</footer>
+      <footer>
+        Little adventures. Big imaginations. Made together. <BuildVersion />
+      </footer>
     </div>
   );
 }
@@ -453,6 +469,13 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
     if (id === "stand") void perform({ type: "rest", furnitureId: null });
     else if (id.startsWith("rest:"))
       void perform({ type: "rest", furnitureId: id.slice(5) });
+    else if (id === "shop-counter" && shopFor(c.room))
+      open(shopFor(c.room)!.id as Panel);
+    else if (shopInteriors.some((shop) => shop.id === id))
+      void perform({
+        type: "room",
+        room: shopInteriors.find((shop) => shop.id === id)!.room,
+      });
     else if (id === "home")
       void perform({ type: "room", room: `home:${c.id}` }, "Welcome home!");
     else if (id === "hotel")
@@ -483,12 +506,24 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
           hotelStops(c.room).find((entry) => entry.id === "exit")?.target ??
           "town",
       });
-    else if (
-      ["cafe", "restaurant", "library", "post", "neighbors"].includes(id)
-    )
-      open(id as Panel);
+    else if (["neighbors"].includes(id)) open(id as Panel);
   };
   const go = async (id: string) => {
+    const destination = shopInteriors.find((shop) => shop.id === id);
+    if (destination && c.room === destination.room) {
+      scene.current?.goTo(shopCounter.id);
+      return;
+    }
+    if (
+      c.room !== "town" &&
+      (destination || id === "school" || id === "hotel")
+    ) {
+      await perform({
+        type: "room",
+        room: destination?.room ?? (id === "hotel" ? hotel.lobby : "school"),
+      });
+      return;
+    }
     if (isHotelRoom(c.room) && id === "hotel") {
       if (c.room !== hotel.lobby)
         await perform({ type: "room", room: hotel.lobby });
@@ -565,6 +600,7 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
   );
   const isHome = c.room.startsWith("home:");
   const isSchool = c.room === "school";
+  const shop = shopFor(c.room);
   const inHotel = isHotelRoom(c.room);
   const exitName =
     inHotel && c.room !== hotel.lobby ? "Back to lobby" : "Back to town";
@@ -620,9 +656,11 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
                   ? `${homes.find((h) => `home:${h.id}` === c.room)?.name ?? c.name}’s home`
                   : isSchool
                     ? school.name
-                    : inHotel
-                      ? hotelRoomName(c.room)
-                      : worldName}
+                    : shop
+                      ? shop.name
+                      : inHotel
+                        ? hotelRoomName(c.room)
+                        : worldName}
                 <span className="heading-flower">✳</span>
               </h1>
               <p>
@@ -630,9 +668,11 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
                   ? "Come in, get cozy, stay a little while."
                   : isSchool
                     ? "Walk to a desk and discover something new."
-                    : inHotel
-                      ? "A cozy stay, a new room, and something yummy."
-                      : "A lovely day for a little adventure."}
+                    : shop
+                      ? `Come inside and ${shop.action.toLowerCase()}.`
+                      : inHotel
+                        ? "A cozy stay, a new room, and something yummy."
+                        : "A lovely day for a little adventure."}
               </p>
             </div>
             <div className="weather">
@@ -657,9 +697,11 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
                   ? "Cozy at home"
                   : isSchool
                     ? "Inside the school"
-                    : inHotel
-                      ? "Inside the hotel"
-                      : "Willowbrook square"}
+                    : shop
+                      ? shop.name
+                      : inHotel
+                        ? "Inside the hotel"
+                        : "Willowbrook square"}
               </span>
               <span
                 className={"connection " + (!bridge.connected ? "offline" : "")}
@@ -697,37 +739,39 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
                   className="interact-button"
                   onClick={() => interact(nearby)}
                 >
-                  {nearby === "stand"
-                    ? "Stand up"
-                    : nearby.startsWith("rest:")
-                      ? furnitureFor(c.room).find(
-                          (item) => item.id === nearby.slice(5),
-                        )?.pose === "lie"
-                        ? "Lie on bed"
-                        : "Sit down"
-                      : nearby.startsWith("lesson:")
-                        ? `Try ${schoolStations.find((entry) => entry.id === nearby)?.name ?? "a lesson"}`
-                        : nearby === "exit"
-                          ? exitName
-                          : nearby === "hotel"
-                            ? "Enter hotel"
-                            : nearby === "hotel-buffet"
-                              ? "Free buffet"
-                              : nearby.startsWith("door:")
-                                ? `Enter ${hotelStops(c.room).find((entry) => entry.id === nearby)?.name ?? "room"}`
-                                : nearby === "cafe"
-                                  ? "Visit café"
-                                  : nearby === "restaurant"
-                                    ? "Visit restaurant"
-                                    : nearby === "library"
-                                      ? "Visit library"
-                                      : nearby === "school"
-                                        ? "Visit school"
-                                        : nearby === "post"
-                                          ? "Pick up a job"
-                                          : nearby === "home"
-                                            ? "Go inside"
-                                            : "Visit a neighbor"}{" "}
+                  {nearby === "shop-counter"
+                    ? shop?.action
+                    : nearby === "stand"
+                      ? "Stand up"
+                      : nearby.startsWith("rest:")
+                        ? furnitureFor(c.room).find(
+                            (item) => item.id === nearby.slice(5),
+                          )?.pose === "lie"
+                          ? "Lie on bed"
+                          : "Sit down"
+                        : nearby.startsWith("lesson:")
+                          ? `Try ${schoolStations.find((entry) => entry.id === nearby)?.name ?? "a lesson"}`
+                          : nearby === "exit"
+                            ? exitName
+                            : nearby === "hotel"
+                              ? "Enter hotel"
+                              : nearby === "hotel-buffet"
+                                ? "Free buffet"
+                                : nearby.startsWith("door:")
+                                  ? `Enter ${hotelStops(c.room).find((entry) => entry.id === nearby)?.name ?? "room"}`
+                                  : nearby === "cafe"
+                                    ? "Visit café"
+                                    : nearby === "restaurant"
+                                      ? "Visit restaurant"
+                                      : nearby === "library"
+                                        ? "Visit library"
+                                        : nearby === "school"
+                                          ? "Visit school"
+                                          : nearby === "post"
+                                            ? "Pick up a job"
+                                            : nearby === "home"
+                                              ? "Go inside"
+                                              : "Visit a neighbor"}{" "}
                   <span>E</span>
                 </button>
               )}
@@ -740,6 +784,16 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
               </button>
             </div>
           </div>
+          {shop && (
+            <nav className="school-desks" aria-label="Shop counter">
+              <button
+                className="secondary"
+                onClick={() => scene.current?.goTo(shopCounter.id)}
+              >
+                {shop.action}
+              </button>
+            </nav>
+          )}
           {isSchool && (
             <nav className="school-desks" aria-label="Classroom desks">
               {schoolStations.map((station) => (
@@ -988,6 +1042,7 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
         </aside>
       </main>
       <footer className="app-footer">
+        <BuildVersion />
         <span>
           <Leaf size={13} /> Made for our kind of everyday magic.
         </span>
