@@ -1,3 +1,4 @@
+import { seeds } from "./garden";
 import { shopItems } from "./town";
 export const homeItemSpots = [
   { id: "shelf-left", name: "Shelf, left", x: 610, y: 310 },
@@ -10,7 +11,7 @@ export const homeItemSpots = [
 export function moveHomeItem(
   inventory: Record<string, number>,
   homeItems: Record<string, string>,
-  action: "unpack" | "pack" | "playHome",
+  action: "unpack" | "pack" | "playHome" | "waterHome",
   spotId: string,
   itemId?: string,
 ) {
@@ -32,11 +33,15 @@ export function moveHomeItem(
   } else if (action === "pack") {
     bag[item.id] = (bag[item.id] ?? 0) + 1;
     delete placed[spotId];
+  } else if (action === "waterHome") {
+    const seed = seeds.find((entry) => entry.id === item.id);
+    if (!seed) throw new Error("Choose a seed pot to water.");
+    placed[spotId] = seed.flowerId;
   } else if (item.shop !== "toys")
     throw new Error("Choose a toy to play with.");
   return {
     inventory: bag,
     homeItems: placed,
-    label: `${action === "unpack" ? "Unpacked" : action === "pack" ? "Packed" : "Played with"} ${item.name}`,
+    label: `${action === "waterHome" ? "Grew" : action === "unpack" ? "Unpacked" : action === "pack" ? "Packed" : "Played with"} ${item.name}`,
   };
 }

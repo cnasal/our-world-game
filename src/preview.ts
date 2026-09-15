@@ -92,6 +92,7 @@ export function usePreview(): GameBridge {
       switch (action.type) {
         case "unpack":
         case "pack":
+        case "waterHome":
         case "playHome": {
           if (c.room !== `home:${c.id}`)
             throw new Error(
@@ -242,6 +243,8 @@ export function usePreview(): GameBridge {
             amount = resalePrice(item.price);
             label = `Sold ${item.name}`;
           } else if (action.type === "buy") {
+            if (item.id.startsWith("flower-"))
+              throw new Error("Grow flowers from seed pots at home.");
             near(item.shop);
             if (c.balance < item.price)
               throw new Error("Try a delivery to earn a few more coins.");
@@ -251,11 +254,14 @@ export function usePreview(): GameBridge {
           } else {
             if (!(c.inventory[item.id] > 0))
               throw new Error("Your bag is empty.");
-            if (item.shop !== "toys") c.inventory[item.id]--;
+            if (item.shop !== "toys" && item.shop !== "garden")
+              c.inventory[item.id]--;
             label =
-              item.shop === "toys"
-                ? `Played with ${item.name}`
-                : `Enjoyed ${item.name}`;
+              item.shop === "garden"
+                ? `Admired ${item.name}`
+                : item.shop === "toys"
+                  ? `Played with ${item.name}`
+                  : `Enjoyed ${item.name}`;
           }
         }
       }

@@ -45,7 +45,7 @@ export type Snapshot = {
 export type GameAction =
   | { type: "sell"; itemId: string; requestId: string }
   | {
-      type: "unpack" | "pack" | "playHome";
+      type: "unpack" | "pack" | "playHome" | "waterHome";
       spotId: string;
       itemId?: string;
       requestId: string;

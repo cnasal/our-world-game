@@ -1149,3 +1149,82 @@ test("simultaneous sales cannot sell one item twice", async () => {
   expect(character.balance).toBe(46);
   expect(character.inventory["berry-milk"]).toBe(0);
 });
+
+test("garden seeds grow once in the owner's home and preserve coins and ownership", async () => {
+  const { t, worldId, owner } = await setup();
+  await owner.mutation(api.game.move, { worldId, x: 2210, y: 815 });
+  await owner.mutation(api.game.enter, { worldId, room: "shop:garden" });
+  const buy = {
+    worldId,
+    type: "buy" as const,
+    itemId: "seed-sunflower",
+    requestId: "seed-buy",
+  };
+  await owner.mutation(api.game.transact, buy);
+  await owner.mutation(api.game.transact, buy);
+  await expect(
+    owner.mutation(api.game.transact, {
+      ...buy,
+      itemId: "flower-sunflower",
+      requestId: "direct-flower",
+    }),
+  ).rejects.toThrow();
+  const state = await owner.query(api.game.snapshot, { worldId });
+  expect(state.character.balance).toBe(45);
+  expect(state.character.inventory["seed-sunflower"]).toBe(1);
+  const water = {
+    worldId,
+    type: "waterHome" as const,
+    spotId: "shelf-left",
+    requestId: "water-seed",
+  };
+  await expect(owner.mutation(api.game.transact, water)).rejects.toThrow();
+  await owner.mutation(api.game.enter, {
+    worldId,
+    room: `home:${state.character.id}`,
+  });
+  await owner.mutation(api.game.transact, {
+    worldId,
+    type: "unpack",
+    spotId: "shelf-left",
+    itemId: "seed-sunflower",
+    requestId: "plant-seed",
+  });
+  await t.mutation(internal.admin.addMember, {
+    worldId,
+    subject: "user_garden_visitor",
+  });
+  const visitor = t.withIdentity({ subject: "user_garden_visitor" });
+  await visitor.mutation(api.game.enter, {
+    worldId,
+    room: `home:${state.character.id}`,
+  });
+  await expect(visitor.mutation(api.game.transact, water)).rejects.toThrow();
+  await owner.mutation(api.game.transact, water);
+  await owner.mutation(api.game.transact, water);
+  await expect(
+    owner.mutation(api.game.transact, { ...water, requestId: "water-again" }),
+  ).rejects.toThrow();
+  const grown = await visitor.query(api.game.snapshot, { worldId });
+  expect(
+    grown.homes.find((home) => home.id === state.character.id)?.homeItems?.[
+      "shelf-left"
+    ],
+  ).toBe("flower-sunflower");
+  await owner.mutation(api.game.transact, {
+    worldId,
+    type: "pack",
+    spotId: "shelf-left",
+    requestId: "pack-flower",
+  });
+  await owner.mutation(api.game.transact, {
+    worldId,
+    type: "use",
+    itemId: "flower-sunflower",
+    requestId: "admire-flower",
+  });
+  const final = await owner.query(api.game.snapshot, { worldId });
+  expect(final.character.inventory["flower-sunflower"]).toBe(1);
+  expect(final.character.inventory["seed-sunflower"]).toBe(0);
+  expect(final.character.balance).toBe(45);
+});

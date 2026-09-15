@@ -161,3 +161,14 @@ pets, savings, homes, and parcels are not sale items. Live sales verify membersh
 shop entry, and ownership, then remove the item and award pocket coins atomically
 with retry receipts. The shop supports seats, visiting pets, and deliveries.
 Run `node scripts/resale-check.mjs` against the development preview for the walkthrough.
+
+### Garden shop
+
+Little Bloom Garden Shop sells sunflower, daisy, and tulip seed pots for 5 coins.
+Unpack a pot in your own home, open **Pick up items**, and choose **Water and
+grow**. It blooms straight away and stays as a decoration. Flowers can be picked
+up and unpacked again; admiring a plant keeps it in the bag. There is no timer or
+wilting. The shop has seats and accepts deliveries.
+`src/content/garden.ts` contains the seeds and flowers. Watering uses the existing
+atomic home-item transactions and retry receipts, with no saved-data migration.
+Run `node scripts/garden-check.mjs` against the development preview to try it.

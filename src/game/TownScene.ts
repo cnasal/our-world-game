@@ -1,3 +1,4 @@
+import { gardenShop } from "../content/garden";
 import { resaleShop } from "../content/resale";
 import { itemArt } from "./itemArt";
 import { homeItemSpots } from "../content/homeItems";
@@ -941,6 +942,18 @@ export class TownScene extends Phaser.Scene {
     this.text(1610, 694, "ANIMAL SHELTER", 13, "#526346");
     this.building(1810, 630, 200, 127, 0x8da395, 0xf4edd6, bank.name, "bank");
     this.text(1910, 694, "BANK", 20, "#526346");
+    this.rect(1945, 790, 330, 86, 0xe8d9b6, 20);
+    this.building(
+      2110,
+      630,
+      200,
+      127,
+      0x86a674,
+      0xf5edce,
+      gardenShop.name,
+      "garden",
+    );
+    this.text(2210, 694, "SEEDS & FLOWERS", 15, "#526346");
     // Café terrace.
     const terrace = this.add.graphics();
     terrace.fillStyle(0xd7c9a5).fillRoundedRect(108, 398, 100, 74, 14);
@@ -1024,6 +1037,14 @@ export class TownScene extends Phaser.Scene {
             );
       }
       this.text(720, 372, "Stories for everyone", 19, "#fff9e7");
+    } else if (shop.id === "garden") {
+      for (const [index, x] of [420, 980].entries()) {
+        this.rect(x - 40, 330, 80, 12, 0xa08063, 4);
+        itemArt(this, index ? "flower-tulip" : "flower-sunflower", "garden")
+          .setPosition(x, 325)
+          .setScale(2);
+      }
+      this.text(720, 372, "A little water, a happy flower", 19, "#fff9e7");
     } else if (shop.id === "resale") {
       for (const x of [410, 970]) {
         this.rect(x - 35, 240, 85, 132, 0xa88b71, 6);

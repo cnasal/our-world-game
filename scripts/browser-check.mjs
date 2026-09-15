@@ -252,6 +252,43 @@ try {
   );
   await page.getByRole("button", { name: "My home", exact: true }).click();
   await page.getByRole("heading", { name: "Daisy’s home" }).waitFor();
+  // Unpacking the last item must leave a way to pick it back up.
+  const originalInventory = await page.evaluate(() => {
+    const saved = JSON.parse(localStorage.getItem("our-world-preview-v1"));
+    const inventory = saved.character.inventory;
+    saved.character.inventory = { "berry-milk": 1 };
+    localStorage.setItem("our-world-preview-v1", JSON.stringify(saved));
+    return inventory;
+  });
+  await page.reload();
+  await page.waitForSelector("canvas");
+  await page.getByRole("button", { name: /My bag/ }).click();
+  await page.getByRole("button", { name: "Unpack", exact: true }).click();
+  await page.waitForSelector("dialog", { state: "detached" });
+  await page.getByRole("button", { name: /My bag/ }).click();
+  await page
+    .locator("dialog")
+    .getByRole("button", { name: "Pick up items", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Pick up", exact: true }).click();
+  await page.getByText("Nothing unpacked yet.", { exact: false }).waitFor();
+  await page.reload();
+  await page.waitForSelector("canvas");
+  const pickedUp = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem("our-world-preview-v1")),
+  );
+  assert.equal(pickedUp.character.inventory["berry-milk"], 1);
+  assert.deepEqual(
+    pickedUp.homes.find((home) => home.id === pickedUp.character.id).homeItems,
+    {},
+  );
+  await page.evaluate((inventory) => {
+    const saved = JSON.parse(localStorage.getItem("our-world-preview-v1"));
+    saved.character.inventory = inventory;
+    localStorage.setItem("our-world-preview-v1", JSON.stringify(saved));
+  }, originalInventory);
+  await page.reload();
+  await page.waitForSelector("canvas");
   await restAt("Sit on sofa", "sofa");
   await page.screenshot({
     path: "/tmp/our-world-sitting-home.png",

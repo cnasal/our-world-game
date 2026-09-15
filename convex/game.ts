@@ -295,6 +295,7 @@ export const transact = mutation({
       v.literal("unpack"),
       v.literal("pack"),
       v.literal("playHome"),
+      v.literal("waterHome"),
       v.literal("deposit"),
       v.literal("withdraw"),
       v.literal("adopt"),
@@ -340,7 +341,8 @@ export const transact = mutation({
     if (
       args.type === "unpack" ||
       args.type === "pack" ||
-      args.type === "playHome"
+      args.type === "playHome" ||
+      args.type === "waterHome"
     ) {
       if (p?.room !== `home:${c._id}`)
         throw new Error(
@@ -444,6 +446,8 @@ export const transact = mutation({
         amount = resalePrice(item.price);
         label = `Sold ${item.name}`;
       } else if (args.type === "buy") {
+        if (item.id.startsWith("flower-"))
+          throw new Error("Grow flowers from seed pots at home.");
         near(item.shop);
         if (c.balance < item.price)
           throw new Error("You need a few more coins. Try a delivery!");
@@ -453,11 +457,14 @@ export const transact = mutation({
       } else {
         if (!(inventory[item.id] > 0))
           throw new Error("There are none left in your bag.");
-        if (item.shop !== "toys") inventory[item.id] -= 1;
+        if (item.shop !== "toys" && item.shop !== "garden")
+          inventory[item.id] -= 1;
         label =
-          item.shop === "toys"
-            ? `Played with ${item.name}`
-            : `Enjoyed ${item.name}`;
+          item.shop === "garden"
+            ? `Admired ${item.name}`
+            : item.shop === "toys"
+              ? `Played with ${item.name}`
+              : `Enjoyed ${item.name}`;
       }
       await ctx.db.patch(c._id, { inventory, balance: c.balance + amount });
     }

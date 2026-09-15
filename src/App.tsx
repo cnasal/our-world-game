@@ -1,3 +1,4 @@
+import { gardenShop, seeds } from "./content/garden";
 import { resaleShop, resalePrice } from "./content/resale";
 import { homeItemSpots } from "./content/homeItems";
 import { bank } from "./content/bank";
@@ -424,6 +425,7 @@ function LiveWorld({ worldId }: { worldId: GenericId<"worlds"> }) {
 }
 
 type Panel =
+  | "garden"
   | "resale"
   | "homeItems"
   | "decorate"
@@ -627,6 +629,7 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
     else if (parcel?.room) void perform({ type: "room", room: parcel.room });
   };
   const title = {
+    garden: gardenShop.name,
     resale: resaleShop.name,
     homeItems: "Things in your home",
     decorate: "Make your home your own",
@@ -791,49 +794,51 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
                   className="interact-button"
                   onClick={() => interact(nearby)}
                 >
-                  {nearby === "resale"
-                    ? "Visit resale shop"
-                    : nearby === "bank"
-                      ? "Visit bank"
-                      : nearby === "icecream"
-                        ? "Visit ice cream shop"
-                        : nearby === "shelter"
-                          ? "Visit animal shelter"
-                          : nearby === "toys"
-                            ? "Visit toy store"
-                            : nearby === "shop-counter"
-                              ? shop?.action
-                              : nearby === "stand"
-                                ? "Stand up"
-                                : nearby.startsWith("rest:")
-                                  ? furnitureFor(c.room).find(
-                                      (item) => item.id === nearby.slice(5),
-                                    )?.pose === "lie"
-                                    ? "Lie on bed"
-                                    : "Sit down"
-                                  : nearby.startsWith("lesson:")
-                                    ? `Try ${schoolStations.find((entry) => entry.id === nearby)?.name ?? "a lesson"}`
-                                    : nearby === "exit"
-                                      ? exitName
-                                      : nearby === "hotel"
-                                        ? "Enter hotel"
-                                        : nearby === "hotel-buffet"
-                                          ? "Free buffet"
-                                          : nearby.startsWith("door:")
-                                            ? `Enter ${hotelStops(c.room).find((entry) => entry.id === nearby)?.name ?? "room"}`
-                                            : nearby === "cafe"
-                                              ? "Visit café"
-                                              : nearby === "restaurant"
-                                                ? "Visit restaurant"
-                                                : nearby === "library"
-                                                  ? "Visit library"
-                                                  : nearby === "school"
-                                                    ? "Visit school"
-                                                    : nearby === "post"
-                                                      ? "Pick up a job"
-                                                      : nearby === "home"
-                                                        ? "Go inside"
-                                                        : "Visit a neighbor"}{" "}
+                  {nearby === "garden"
+                    ? "Visit garden shop"
+                    : nearby === "resale"
+                      ? "Visit resale shop"
+                      : nearby === "bank"
+                        ? "Visit bank"
+                        : nearby === "icecream"
+                          ? "Visit ice cream shop"
+                          : nearby === "shelter"
+                            ? "Visit animal shelter"
+                            : nearby === "toys"
+                              ? "Visit toy store"
+                              : nearby === "shop-counter"
+                                ? shop?.action
+                                : nearby === "stand"
+                                  ? "Stand up"
+                                  : nearby.startsWith("rest:")
+                                    ? furnitureFor(c.room).find(
+                                        (item) => item.id === nearby.slice(5),
+                                      )?.pose === "lie"
+                                      ? "Lie on bed"
+                                      : "Sit down"
+                                    : nearby.startsWith("lesson:")
+                                      ? `Try ${schoolStations.find((entry) => entry.id === nearby)?.name ?? "a lesson"}`
+                                      : nearby === "exit"
+                                        ? exitName
+                                        : nearby === "hotel"
+                                          ? "Enter hotel"
+                                          : nearby === "hotel-buffet"
+                                            ? "Free buffet"
+                                            : nearby.startsWith("door:")
+                                              ? `Enter ${hotelStops(c.room).find((entry) => entry.id === nearby)?.name ?? "room"}`
+                                              : nearby === "cafe"
+                                                ? "Visit café"
+                                                : nearby === "restaurant"
+                                                  ? "Visit restaurant"
+                                                  : nearby === "library"
+                                                    ? "Visit library"
+                                                    : nearby === "school"
+                                                      ? "Visit school"
+                                                      : nearby === "post"
+                                                        ? "Pick up a job"
+                                                        : nearby === "home"
+                                                          ? "Go inside"
+                                                          : "Visit a neighbor"}{" "}
                   <span>E</span>
                 </button>
               )}
@@ -862,7 +867,7 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
                 <Home size={17} /> Decorate my home
               </button>
               <button className="secondary" onClick={() => open("homeItems")}>
-                Things in my home
+                Pick up items
               </button>
             </nav>
           )}
@@ -1042,6 +1047,13 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
               <h2>Little places to go</h2>
               <MapPin size={17} />
             </div>
+            <Place
+              icon={<Sun size={20} />}
+              title={gardenShop.name}
+              subtitle="Seed pots and happy flowers · 5 coins"
+              color="sage"
+              onClick={() => void go("garden")}
+            />
             <Place
               icon={<Coins size={20} />}
               title={resaleShop.name}
@@ -1421,28 +1433,33 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
               ))}
             </>
           )}
-          {(panel === "cafe" ||
+          {(panel === "garden" ||
+            panel === "cafe" ||
             panel === "restaurant" ||
             panel === "toys" ||
             panel === "icecream") && (
             <>
               <p className="modal-intro">
-                {panel === "icecream"
-                  ? iceCreamShop.welcome
-                  : panel === "toys"
-                    ? toyStore.welcome
-                    : panel === "restaurant"
-                      ? restaurant.welcome
-                      : "A treat for your travels, or a cozy moment at home. Everything goes into your bag."}
+                {panel === "garden"
+                  ? gardenShop.welcome
+                  : panel === "icecream"
+                    ? iceCreamShop.welcome
+                    : panel === "toys"
+                      ? toyStore.welcome
+                      : panel === "restaurant"
+                        ? restaurant.welcome
+                        : "A treat for your travels, or a cozy moment at home. Everything goes into your bag."}
               </p>
               <div className="shop-list">
-                {(panel === "icecream"
-                  ? iceCreams
-                  : panel === "toys"
-                    ? toys
-                    : panel === "restaurant"
-                      ? meals
-                      : drinks
+                {(panel === "garden"
+                  ? seeds
+                  : panel === "icecream"
+                    ? iceCreams
+                    : panel === "toys"
+                      ? toys
+                      : panel === "restaurant"
+                        ? meals
+                        : drinks
                 ).map((item) => (
                   <div className="shop-item" key={item.id}>
                     <span
@@ -1575,6 +1592,25 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
                       <p>{spot.name}</p>
                     </div>
                     <div className="home-item-actions">
+                      {seeds.some((seed) => seed.id === item.id) && (
+                        <button
+                          className="secondary"
+                          disabled={busy}
+                          onClick={() =>
+                            void perform(
+                              {
+                                type: "waterHome",
+                                spotId: spot.id,
+                                requestId: crypto.randomUUID(),
+                              },
+                              "You watered your seed. A flower bloomed!",
+                              true,
+                            )
+                          }
+                        >
+                          Water and grow
+                        </button>
+                      )}
                       {item.shop === "toys" && (
                         <button
                           className="secondary"
@@ -1609,7 +1645,7 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
                           )
                         }
                       >
-                        Put back in backpack
+                        Pick up
                       </button>
                     </div>
                   </div>
@@ -1622,42 +1658,39 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
           )}
           {panel === "bag" && (
             <>
-              {count > 0 &&
-                (c.room === `home:${c.id}` ? (
-                  <div className="unpack-choice">
-                    <label className="field-label" htmlFor="unpack-spot">
-                      Unpack onto…
-                    </label>
-                    {freeSpots.length ? (
-                      <select
-                        id="unpack-spot"
-                        value={selectedSpot}
-                        onChange={(event) => setUnpackSpot(event.target.value)}
-                      >
-                        {freeSpots.map((spot) => (
-                          <option value={spot.id} key={spot.id}>
-                            {spot.name}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <p>
-                        Your spots are full. Put something back in your backpack
-                        to make room.
-                      </p>
-                    )}
-                    <button
-                      className="secondary"
-                      onClick={() => open("homeItems")}
+              {c.room === `home:${c.id}` ? (
+                <div className="unpack-choice">
+                  <label className="field-label" htmlFor="unpack-spot">
+                    Unpack onto…
+                  </label>
+                  {freeSpots.length ? (
+                    <select
+                      id="unpack-spot"
+                      value={selectedSpot}
+                      onChange={(event) => setUnpackSpot(event.target.value)}
                     >
-                      Things in my home
-                    </button>
-                  </div>
-                ) : (
-                  <p>
-                    Visit your own home to unpack items and leave them there.
-                  </p>
-                ))}
+                      {freeSpots.map((spot) => (
+                        <option value={spot.id} key={spot.id}>
+                          {spot.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p>
+                      Your spots are full. Put something back in your backpack
+                      to make room.
+                    </p>
+                  )}
+                  <button
+                    className="secondary"
+                    onClick={() => open("homeItems")}
+                  >
+                    Pick up items
+                  </button>
+                </div>
+              ) : (
+                <p>Visit your own home to unpack items and leave them there.</p>
+              )}
               {count === 0 ? (
                 <div className="empty-state">
                   <Backpack size={45} />
@@ -1699,20 +1732,26 @@ function GameShell({ bridge }: { bridge: GameBridge }) {
                               itemId: item.id,
                               requestId: crypto.randomUUID(),
                             },
-                            item.shop === "toys"
-                              ? `You played with your ${item.name.toLowerCase()}! It stays in your bag.`
-                              : item.shop === "icecream"
-                                ? "Yum! That was a lovely ice cream."
-                                : item.shop === "restaurant"
-                                  ? "Yum! That was a lovely meal."
-                                  : "A happy little sip. Delicious!",
+                            item.shop === "garden"
+                              ? "A lovely little plant! Unpack seed pots at home, then water them in Pick up items."
+                              : item.shop === "toys"
+                                ? `You played with your ${item.name.toLowerCase()}! It stays in your bag.`
+                                : item.shop === "icecream"
+                                  ? "Yum! That was a lovely ice cream."
+                                  : item.shop === "restaurant"
+                                    ? "Yum! That was a lovely meal."
+                                    : "A happy little sip. Delicious!",
                           );
                           scene.current?.wave(
                             item.shop === "toys" ? "✨" : "❤️",
                           );
                         }}
                       >
-                        {item.shop === "toys" ? "Play" : "Enjoy"}
+                        {item.shop === "garden"
+                          ? "Admire"
+                          : item.shop === "toys"
+                            ? "Play"
+                            : "Enjoy"}
                       </button>
                       {c.room === `home:${c.id}` && (
                         <button

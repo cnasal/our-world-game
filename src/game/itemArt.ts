@@ -7,7 +7,27 @@ export function itemArt(scene: Phaser.Scene, id: string, shop: string) {
     g.fillStyle(color).fillCircle(x, y, r);
   const box = (x: number, y: number, w: number, h: number, color: number) =>
     g.fillStyle(color).fillRoundedRect(x, y, w, h, 3);
-  if (id === "toy-stuffed-duck") {
+  if (shop === "garden") {
+    box(-13, -8, 26, 19, 0xbc805f);
+    box(-16, -12, 32, 7, 0xd89b73);
+    g.lineStyle(4, 0x719451).lineBetween(0, -12, 0, -35);
+    g.fillStyle(0x8aaf68).fillEllipse(-7, -22, 15, 7);
+    if (id.startsWith("flower-")) {
+      const color = id.includes("tulip")
+        ? 0xe6a1b2
+        : id.includes("daisy")
+          ? 0xfff9e8
+          : 0xf1cf61;
+      for (let n = 0; n < 6; n++)
+        circle(
+          Math.cos((n * Math.PI) / 3) * 9,
+          -36 + Math.sin((n * Math.PI) / 3) * 9,
+          7,
+          color,
+        );
+      circle(0, -36, 6, 0xb58951);
+    }
+  } else if (id === "toy-stuffed-duck") {
     g.fillStyle(0xf1d263).fillEllipse(-3, -10, 29, 20).fillCircle(8, -24, 10);
     g.fillStyle(0xe3a04d).fillTriangle(15, -27, 27, -23, 15, -20);
     circle(10, -26, 2, 0x4b4936);

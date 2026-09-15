@@ -1,3 +1,4 @@
+import { gardenShop, seeds, flowers } from "./garden";
 import { resaleShop } from "./resale";
 import { bank } from "./bank";
 import { iceCreamShop, iceCreams } from "./iceCream";
@@ -102,6 +103,10 @@ const earlierMeals = [
 ] as const;
 // Keep item IDs forever, even when changing a meal's name.
 export const shopItems = [
+  ...[...seeds, ...flowers].map((item) => ({
+    ...item,
+    shop: "garden" as const,
+  })),
   ...iceCreams.map((item) => ({ ...item, shop: "icecream" as const })),
   ...toys.map((item) => ({ ...item, shop: "toys" as const })),
   ...drinks.map((item) => ({ ...item, shop: "cafe" as const })),
@@ -120,6 +125,7 @@ export const avatarColors = [
 ];
 export const town = { width: 2400, height: 1040, spawn: { x: 720, y: 665 } };
 export const stops = [
+  { id: "garden", name: gardenShop.name, x: 2210, y: 815 },
   { id: "resale", name: resaleShop.name, x: 2210, y: 465 },
   { id: "bank", name: bank.name, x: 1910, y: 815 },
   { id: "icecream", name: iceCreamShop.name, x: 1910, y: 465 },

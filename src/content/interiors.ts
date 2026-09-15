@@ -1,3 +1,4 @@
+import { gardenShop } from "./garden";
 import { resaleShop } from "./resale";
 import { bank } from "./bank";
 import { iceCreamShop } from "./iceCream";
@@ -6,6 +7,13 @@ import { toyStore } from "./toys";
 import { restaurant } from "./town";
 import { library } from "./library";
 export const shopInteriors = [
+  {
+    id: "garden",
+    room: "shop:garden",
+    name: gardenShop.name,
+    action: "Choose seed pots",
+    wall: 0xdcebcf,
+  },
   {
     id: "resale",
     room: "shop:resale",
