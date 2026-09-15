@@ -24,6 +24,10 @@ export function moveHomeItem(
   );
   if (!item) throw new Error("That item is not here.");
   if (action === "unpack") {
+    if (item.shop === "costumes")
+      throw new Error(
+        "Keep dresses in My outfits so you can wear them anytime.",
+      );
     if (placed[spotId])
       throw new Error("That spot is full. Choose an empty spot.");
     if (!(bag[item.id] > 0))

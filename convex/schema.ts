@@ -19,6 +19,7 @@ export default defineSchema({
     inventory: v.record(v.string(), v.number()),
     homeItems: v.optional(v.record(v.string(), v.string())),
     petId: v.optional(v.string()),
+    outfitId: v.optional(v.string()),
     homeStyle: v.optional(
       v.object({ wallColor: v.string(), floorColor: v.string() }),
     ),

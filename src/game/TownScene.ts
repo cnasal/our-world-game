@@ -1,3 +1,5 @@
+import { costumeStore } from "../content/costumes";
+import { drawDress } from "./dressArt";
 import { gardenShop } from "../content/garden";
 import { resaleShop } from "../content/resale";
 import { itemArt } from "./itemArt";
@@ -217,12 +219,14 @@ export class TownScene extends Phaser.Scene {
         snapshot.character.name,
         snapshot.character.color,
         true,
+        snapshot.character.outfitId,
       );
       this.avatar.setPosition(snapshot.character.x, snapshot.character.y);
       this.resizeCamera();
     } else if (
       old?.character.name !== snapshot.character.name ||
-      old?.character.color !== snapshot.character.color
+      old?.character.color !== snapshot.character.color ||
+      old?.character.outfitId !== snapshot.character.outfitId
     ) {
       const { x, y } = this.avatar;
       this.avatar.destroy();
@@ -230,6 +234,7 @@ export class TownScene extends Phaser.Scene {
         snapshot.character.name,
         snapshot.character.color,
         true,
+        snapshot.character.outfitId,
       ).setPosition(x, y);
       this.resizeCamera();
     }
@@ -307,7 +312,9 @@ export class TownScene extends Phaser.Scene {
       let item = this.others.get(n.id);
       if (
         item &&
-        (item.target.name !== n.name || item.target.color !== n.color)
+        (item.target.name !== n.name ||
+          item.target.color !== n.color ||
+          item.target.outfitId !== n.outfitId)
       ) {
         item.view.destroy();
         this.others.delete(n.id);
@@ -315,7 +322,10 @@ export class TownScene extends Phaser.Scene {
       }
       if (!item) {
         item = {
-          view: this.makeAvatar(n.name, n.color, false).setPosition(n.x, n.y),
+          view: this.makeAvatar(n.name, n.color, false, n.outfitId).setPosition(
+            n.x,
+            n.y,
+          ),
           target: n,
           stamp: 0,
         };
@@ -954,6 +964,18 @@ export class TownScene extends Phaser.Scene {
       "garden",
     );
     this.text(2210, 694, "SEEDS & FLOWERS", 15, "#526346");
+    this.rect(2475, 418, 70, 150, 0xe8d9b6);
+    this.building(
+      2410,
+      241,
+      200,
+      167,
+      0xbb8eae,
+      0xf8e9ee,
+      costumeStore.name,
+      "costumes",
+    );
+    this.text(2510, 301, "FANCY DRESSES", 17, "#785770");
     // Café terrace.
     const terrace = this.add.graphics();
     terrace.fillStyle(0xd7c9a5).fillRoundedRect(108, 398, 100, 74, 14);
@@ -1037,6 +1059,19 @@ export class TownScene extends Phaser.Scene {
             );
       }
       this.text(720, 372, "Stories for everyone", 19, "#fff9e7");
+    } else if (shop.id === "costumes") {
+      for (const [index, id] of [
+        "dress-pink",
+        "dress-yellow",
+        "dress-blue",
+      ].entries()) {
+        const x = 430 + index * 285;
+        this.rect(x - 3, 297, 6, 64, 0xb89a7d, 3);
+        this.rect(x - 25, 358, 50, 7, 0xb89a7d, 3);
+        const dress = this.add.graphics().setPosition(x, 335);
+        drawDress(dress, id);
+      }
+      this.text(720, 372, "A lovely dress for every day", 19, "#fff9e7");
     } else if (shop.id === "garden") {
       for (const [index, x] of [420, 980].entries()) {
         this.rect(x - 40, 330, 80, 12, 0xa08063, 4);
@@ -1361,7 +1396,12 @@ export class TownScene extends Phaser.Scene {
         (pose === "lie" ? " · resting" : pose === "sit" ? " · sitting" : ""),
     );
   }
-  private makeAvatar(name: string, color: string, own: boolean) {
+  private makeAvatar(
+    name: string,
+    color: string,
+    own: boolean,
+    outfitId?: string,
+  ) {
     const container = this.add.container(0, 0);
     const shadow = this.add
       .graphics()
@@ -1374,6 +1414,8 @@ export class TownScene extends Phaser.Scene {
     g.fillStyle(
       Phaser.Display.Color.HexStringToColor(color).color,
     ).fillRoundedRect(-18, -39, 36, 35, 12);
+    drawDress(g, outfitId);
+    container.setData("outfitId", outfitId);
     g.fillStyle(0xf0c9a0)
       .fillCircle(-20, -22, 6)
       .fillCircle(20, -22, 6)

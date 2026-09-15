@@ -1,3 +1,4 @@
+import { chooseOutfit } from "../src/content/costumes";
 import { resalePrice } from "../src/content/resale";
 import { moveHomeItem } from "../src/content/homeItems";
 import { transferCoins } from "../src/content/bank";
@@ -85,6 +86,7 @@ export const snapshot = query({
         savings: c.savings ?? 0,
         inventory: c.inventory,
         petId: c.petId,
+        outfitId: c.outfitId,
         delivery: c.delivery,
         deliveryTarget: c.deliveryTarget,
         deliveries: c.deliveries,
@@ -123,6 +125,7 @@ export const people = query({
           name: c.name,
           color: c.color,
           petId: c.petId,
+          outfitId: c.outfitId,
           room: p.room,
           x: p.x,
           y: p.y,
@@ -296,6 +299,7 @@ export const transact = mutation({
       v.literal("pack"),
       v.literal("playHome"),
       v.literal("waterHome"),
+      v.literal("wear"),
       v.literal("deposit"),
       v.literal("withdraw"),
       v.literal("adopt"),
@@ -360,6 +364,12 @@ export const transact = mutation({
         inventory: next.inventory,
         homeItems: next.homeItems,
       });
+    } else if (args.type === "wear") {
+      const outfitId = chooseOutfit(c.inventory, args.itemId);
+      await ctx.db.patch(c._id, { outfitId });
+      label = outfitId
+        ? "Changed into a fancy dress"
+        : "Changed into everyday clothes";
     } else if (args.type === "deposit" || args.type === "withdraw") {
       if (p?.room !== "shop:bank")
         throw new Error("Come inside the bank to move your coins.");
@@ -442,6 +452,10 @@ export const transact = mutation({
           throw new Error("Come inside the resale shop to sell an item.");
         if (!(inventory[item.id] > 0))
           throw new Error("That item is not in your backpack.");
+        if (c.outfitId === item.id)
+          throw new Error(
+            "Change into another outfit before selling this dress.",
+          );
         inventory[item.id] -= 1;
         amount = resalePrice(item.price);
         label = `Sold ${item.name}`;
@@ -449,6 +463,10 @@ export const transact = mutation({
         if (item.id.startsWith("flower-"))
           throw new Error("Grow flowers from seed pots at home.");
         near(item.shop);
+        if (item.shop === "costumes" && inventory[item.id] > 0)
+          throw new Error(
+            "You already own this dress. Open My outfits to wear it.",
+          );
         if (c.balance < item.price)
           throw new Error("You need a few more coins. Try a delivery!");
         amount = -item.price;
@@ -457,6 +475,8 @@ export const transact = mutation({
       } else {
         if (!(inventory[item.id] > 0))
           throw new Error("There are none left in your bag.");
+        if (item.shop === "costumes")
+          throw new Error("Open My outfits to wear your dress.");
         if (item.shop !== "toys" && item.shop !== "garden")
           inventory[item.id] -= 1;
         label =

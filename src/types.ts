@@ -8,6 +8,7 @@ export type Character = {
   room: string;
   restId?: string;
   petId?: string;
+  outfitId?: string;
   x: number;
   y: number;
   inventory: Record<string, number>;
@@ -22,6 +23,7 @@ export type Neighbor = {
   room: string;
   restId?: string;
   petId?: string;
+  outfitId?: string;
   x: number;
   y: number;
   updatedAt: number;
@@ -43,6 +45,7 @@ export type Snapshot = {
   receipts: Receipt[];
 };
 export type GameAction =
+  | { type: "wear"; itemId: string; requestId: string }
   | { type: "sell"; itemId: string; requestId: string }
   | {
       type: "unpack" | "pack" | "playHome" | "waterHome";

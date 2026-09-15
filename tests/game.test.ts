@@ -1228,3 +1228,159 @@ test("garden seeds grow once in the owner's home and preserve coins and ownershi
   expect(final.character.inventory["seed-sunflower"]).toBe(0);
   expect(final.character.balance).toBe(45);
 });
+
+test("owned dresses can be worn, shared, switched, and removed without consuming them", async () => {
+  const { t, worldId, owner } = await setup();
+  const wear = {
+    worldId,
+    type: "wear" as const,
+    itemId: "dress-pink",
+    requestId: "wear-pink",
+  };
+  await expect(owner.mutation(api.game.transact, wear)).rejects.toThrow();
+  await expect(
+    t
+      .withIdentity({ subject: "user_outsider" })
+      .mutation(api.game.transact, wear),
+  ).rejects.toThrow();
+  await expect(
+    owner.mutation(api.game.transact, {
+      worldId,
+      type: "buy",
+      itemId: "dress-pink",
+      requestId: "far-away",
+    }),
+  ).rejects.toThrow();
+  await owner.mutation(api.game.enter, { worldId, room: "shop:costumes" });
+  for (const color of ["pink", "yellow", "blue"]) {
+    const buy = {
+      worldId,
+      type: "buy" as const,
+      itemId: `dress-${color}`,
+      requestId: `buy-${color}`,
+    };
+    await owner.mutation(api.game.transact, buy);
+    await owner.mutation(api.game.transact, buy);
+    await expect(
+      owner.mutation(api.game.transact, {
+        ...buy,
+        requestId: `duplicate-${color}`,
+      }),
+    ).rejects.toThrow();
+  }
+  await owner.mutation(api.game.transact, wear);
+  await owner.mutation(api.game.transact, wear);
+  await owner.mutation(api.game.profile, {
+    worldId,
+    name: "Fancy friend",
+    color: "#8c95cc",
+  });
+  const dressed = await owner.query(api.game.snapshot, { worldId });
+  expect(dressed.character.outfitId).toBe("dress-pink");
+  expect(dressed.character.balance).toBe(5);
+  expect(dressed.character.inventory["dress-pink"]).toBe(1);
+  expect(
+    dressed.receipts.filter(
+      (receipt) => receipt.label === "Changed into a fancy dress",
+    ),
+  ).toHaveLength(1);
+  await t.mutation(internal.admin.addMember, {
+    worldId,
+    subject: "user_dress_visitor",
+  });
+  const visitor = t.withIdentity({ subject: "user_dress_visitor" });
+  expect(
+    (
+      await visitor.query(api.game.people, { worldId, room: "shop:costumes" })
+    ).find((person) => person.id === dressed.character.id)?.outfitId,
+  ).toBe("dress-pink");
+  await expect(visitor.mutation(api.game.transact, wear)).rejects.toThrow();
+  await owner.mutation(api.game.enter, {
+    worldId,
+    room: `home:${dressed.character.id}`,
+  });
+  await expect(
+    owner.mutation(api.game.transact, {
+      worldId,
+      type: "unpack",
+      itemId: "dress-pink",
+      spotId: "shelf-left",
+      requestId: "unpack-dress",
+    }),
+  ).rejects.toThrow();
+  await expect(
+    owner.mutation(api.game.transact, {
+      worldId,
+      type: "use",
+      itemId: "dress-pink",
+      requestId: "consume-dress",
+    }),
+  ).rejects.toThrow();
+  await owner.mutation(api.game.transact, {
+    ...wear,
+    itemId: "dress-blue",
+    requestId: "wear-blue",
+  });
+  expect(
+    (await owner.query(api.game.snapshot, { worldId })).character.outfitId,
+  ).toBe("dress-blue");
+  await owner.mutation(api.game.transact, {
+    ...wear,
+    itemId: "everyday",
+    requestId: "everyday",
+  });
+  const everyday = await owner.query(api.game.snapshot, { worldId });
+  expect(everyday.character.outfitId).toBeUndefined();
+  expect(everyday.character.color).toBe("#8c95cc");
+  expect(everyday.character.inventory).toEqual({
+    "dress-pink": 1,
+    "dress-yellow": 1,
+    "dress-blue": 1,
+  });
+  expect(everyday.character.balance).toBe(5);
+});
+
+test("selling a dress requires taking it off and removes permission to wear it", async () => {
+  const { worldId, owner } = await setup();
+  await owner.mutation(api.game.enter, { worldId, room: "shop:costumes" });
+  await owner.mutation(api.game.transact, {
+    worldId,
+    type: "buy",
+    itemId: "dress-yellow",
+    requestId: "buy-dress",
+  });
+  await owner.mutation(api.game.transact, {
+    worldId,
+    type: "wear",
+    itemId: "dress-yellow",
+    requestId: "wear-dress",
+  });
+  await owner.mutation(api.game.enter, { worldId, room: "shop:resale" });
+  const sell = {
+    worldId,
+    type: "sell" as const,
+    itemId: "dress-yellow",
+    requestId: "sell-dress",
+  };
+  await expect(owner.mutation(api.game.transact, sell)).rejects.toThrow();
+  await owner.mutation(api.game.transact, {
+    worldId,
+    type: "wear",
+    itemId: "everyday",
+    requestId: "take-off",
+  });
+  await owner.mutation(api.game.transact, sell);
+  await owner.mutation(api.game.transact, sell);
+  await expect(
+    owner.mutation(api.game.transact, {
+      worldId,
+      type: "wear",
+      itemId: "dress-yellow",
+      requestId: "wear-sold",
+    }),
+  ).rejects.toThrow();
+  const state = await owner.query(api.game.snapshot, { worldId });
+  expect(state.character.outfitId).toBeUndefined();
+  expect(state.character.inventory["dress-yellow"]).toBe(0);
+  expect(state.character.balance).toBe(42);
+});

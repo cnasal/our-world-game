@@ -1,3 +1,4 @@
+import { chooseOutfit } from "./content/costumes";
 import { resalePrice } from "./content/resale";
 import { moveHomeItem } from "./content/homeItems";
 import { transferCoins } from "./content/bank";
@@ -90,6 +91,12 @@ export function usePreview(): GameBridge {
       )
         return;
       switch (action.type) {
+        case "wear":
+          c.outfitId = chooseOutfit(c.inventory, action.itemId);
+          label = c.outfitId
+            ? "Changed into a fancy dress"
+            : "Changed into everyday clothes";
+          break;
         case "unpack":
         case "pack":
         case "waterHome":
@@ -239,6 +246,10 @@ export function usePreview(): GameBridge {
               throw new Error("Come inside the resale shop to sell an item.");
             if (!(c.inventory[item.id] > 0))
               throw new Error("That item is not in your backpack.");
+            if (c.outfitId === item.id)
+              throw new Error(
+                "Change into another outfit before selling this dress.",
+              );
             c.inventory[item.id]--;
             amount = resalePrice(item.price);
             label = `Sold ${item.name}`;
@@ -246,6 +257,10 @@ export function usePreview(): GameBridge {
             if (item.id.startsWith("flower-"))
               throw new Error("Grow flowers from seed pots at home.");
             near(item.shop);
+            if (item.shop === "costumes" && c.inventory[item.id] > 0)
+              throw new Error(
+                "You already own this dress. Open My outfits to wear it.",
+              );
             if (c.balance < item.price)
               throw new Error("Try a delivery to earn a few more coins.");
             c.inventory[item.id] = (c.inventory[item.id] ?? 0) + 1;
@@ -254,6 +269,8 @@ export function usePreview(): GameBridge {
           } else {
             if (!(c.inventory[item.id] > 0))
               throw new Error("Your bag is empty.");
+            if (item.shop === "costumes")
+              throw new Error("Open My outfits to wear your dress.");
             if (item.shop !== "toys" && item.shop !== "garden")
               c.inventory[item.id]--;
             label =

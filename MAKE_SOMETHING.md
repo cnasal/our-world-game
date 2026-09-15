@@ -172,3 +172,19 @@ wilting. The shop has seats and accepts deliveries.
 `src/content/garden.ts` contains the seeds and flowers. Watering uses the existing
 atomic home-item transactions and retry receipts, with no saved-data migration.
 Run `node scripts/garden-check.mjs` against the development preview to try it.
+
+### Fancy dresses
+
+Visit **Fancy Dress Boutique** at the far right of town. Pink, yellow, and blue
+fancy dresses cost 15 coins each. Buy a dress, open **My outfits**, and choose
+**Wear**. Your character wears its colored skirt, bow, and pearl trim; other
+players see the dress too. **Wear everyday clothes** restores your regular shirt.
+Dresses stay in your collection, and changing outfits is free anywhere. You can
+own each dress once. Change out of a dress before selling it at the resale shop.
+Dresses cannot be unpacked as home decorations.
+
+`src/content/costumes.ts` holds the catalog and ownership validation.
+`src/game/dressArt.ts` draws worn dresses, while `src/DressPreview.tsx` draws the
+matching menu pictures. The optional character `outfitId` preserves old saves;
+wearing checks membership and ownership with the normal atomic retry receipts.
+Run `node scripts/costume-check.mjs` against the isolated development preview.
